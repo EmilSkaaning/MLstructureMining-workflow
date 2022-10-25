@@ -1,5 +1,5 @@
 import argparse, sys, datetime, os
-
+sys.path.append("..")
 from utils.cif_converter import convert_cif
 from utils.cif_check import main_cif_check
 from utils.data_generation import main_pdf_simulatior
