@@ -1,8 +1,9 @@
-import os, sys, re, subprocess
+import os, sys, re, subprocess, multiprocessing, time
+import numpy as np
 from utils.tools import return_files
 from tqdm import tqdm
 
-def convert_cif(r_path: str, w_path: str) -> str:
+def convert_cif(r_path: str, w_path: str, n_cpu: int = 1) -> str:
     """
     Converts CIFs from the Crystallography Open Database into files suitable for DiffPy-CMI.
     A new folder will be created with the new CIFs
@@ -23,6 +24,26 @@ def convert_cif(r_path: str, w_path: str) -> str:
     files = sorted([file for file in files if file[-4:] == '.cif'])
 
     print('{} files found'.format(len(files)))
+
+    info_list = np.array_split(files, n_cpu)
+
+    start_time = time.time()
+
+    processes = []
+    for i in range(n_cpu):
+        p = multiprocessing.Process(target=converter_call, args=[info_list[i], files_w, r_path, w_path])
+        p.start()
+        processes.append(p)
+
+    for p in processes:
+        p.join()
+
+    total_time = time.time() - start_time
+    print('\nDone, took {:6.1f} h.'.format(total_time / 3600))
+    return w_path
+
+
+def converter_call(files: list, files_w: list, r_path: str, w_path: str) -> None:
     pbar = tqdm(total=len(files))
     for file in files:
         if file in files_w:
@@ -72,5 +93,4 @@ def convert_cif(r_path: str, w_path: str) -> str:
             print(e)
         pbar.update()
     pbar.close()
-
-    return w_path
+    return None
