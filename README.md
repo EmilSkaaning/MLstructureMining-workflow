@@ -10,4 +10,4 @@
    * Compare PDFs, make structure catalog add labels and make data h5py
 5) Split data into training, validation and test set.  
 
-# Training and validation
+# Training model
