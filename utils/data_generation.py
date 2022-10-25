@@ -155,8 +155,6 @@ class simPDFs:
 
 def get_structures(direct, savedir, sim_range_dict, split, cpu=1, shuffle_list=False):
     files = sorted(os.listdir(direct))
-    #files = files[:81]
-    #files = continue_check(savedir, files, list_size, split)
 
     if shuffle_list == True:
         random.shuffle(files)  # Shuffles list
@@ -168,34 +166,8 @@ def get_structures(direct, savedir, sim_range_dict, split, cpu=1, shuffle_list=F
     return info_list
 
 
-def continue_check(savedir, files, list_size, nsims):
-    created_files = sorted(os.listdir(savedir))
-    fileph = []
-    if files == []:
-        pass
-    else:
-        if list_size == 1:
-            for file in files:
-                ph = 'PDFs_{}.csv'.format(file[:-4])
-                if ph in created_files:
-                    df = pd.read_csv(savedir+'/'+ph)
-                    if df.shape[0] == nsims:
-                        pass
-                    else:
-                        #print('{} not complete'.format(file))
-                        os.remove(savedir + '/' + ph)
-                        fileph.append(file)
-                else:
-                    fileph.append(file)
-        else:
-            return files
-
-    return fileph
-
-
-def main_pdf_simulatior(stru_path: str, n_cpu: int = 1) -> str:
+def main_pdf_simulatior(stru_path: str, n_cpu: int = 1, n_simulations: int=10) -> str:
     print('\nSimulating PDFs')
-    split = 10  # Number of simulation
 
     savedir = f'{stru_path}_data'
     return_files(savedir)
@@ -219,7 +191,7 @@ def main_pdf_simulatior(stru_path: str, n_cpu: int = 1) -> str:
     else:
         os.mkdir(savedir)
 
-    info_list = get_structures(stru_path, savedir, sim_range_dict, split, cpu=n_cpu)
+    info_list = get_structures(stru_path, savedir, sim_range_dict, n_simulations, cpu=n_cpu)
 
     start_time = time.time()
     processes = []
