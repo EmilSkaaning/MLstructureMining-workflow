@@ -22,4 +22,4 @@ def main(stru_directory: str, n_cpu: int=1, pcc_th: float=0.9, n_simulations: in
 
 
 if __name__ == '__main__':
-    main('/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/cif', n_cpu=4, pcc_th=.9, n_simulations=3, n_merged_files=4)
+    main('/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/cif', n_cpu=4, pcc_th=.9, n_simulations=15, n_merged_files=3)
