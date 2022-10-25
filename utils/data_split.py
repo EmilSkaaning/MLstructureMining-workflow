@@ -37,7 +37,6 @@ def main_split_data(directory: str) -> None:
                 data_df.iloc[trn_len:trn_len+vld_len].to_hdf(os.path.join(directory, 'data_vld', file), key='df', mode='w')
                 data_df.iloc[trn_len+vld_len:].to_hdf(os.path.join(directory, 'data_tst', file), key='df', mode='w')
                 pbar.update()
-                sys.exit()
     pbar.close()
 
     return None
