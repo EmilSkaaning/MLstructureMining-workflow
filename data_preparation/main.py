@@ -15,11 +15,11 @@ def main(stru_directory: str, n_cpu: int=1, pcc_th: float=0.9, n_simulations: in
     cif_dir = convert_cif(stru_directory, project_name, n_cpu)
     main_cif_check(cif_dir, n_cpu)
     data_dir = main_pdf_simulatior(cif_dir, n_cpu, n_simulations)
-    generate_structure_catalog(data_dir, pcc_th)
-    main_split_data(project_name, n_merged_files)
+    #generate_structure_catalog(data_dir, pcc_th)
+    #main_split_data(project_name, n_merged_files)
     return None
 
 
 
 if __name__ == '__main__':
-    main('/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/test_cif', n_cpu=12, pcc_th=.9, n_simulations=100, n_merged_files=50)
+    main('/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/test_cif', n_cpu=12, pcc_th=.9, n_simulations=10, n_merged_files=50)
