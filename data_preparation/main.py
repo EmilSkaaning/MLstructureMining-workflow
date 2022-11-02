@@ -16,7 +16,7 @@ def main(stru_directory: str, project_name: str='', n_cpu: int=1, pcc_th: float=
     cif_dir = convert_cif(stru_directory, project_name, n_cpu)
     main_cif_check(cif_dir, n_cpu)
     data_dir = main_pdf_simulatior(cif_dir, n_cpu, n_simulations)
-    generate_structure_catalog(data_dir, pcc_th, n_cpu)
+    generate_structure_catalog(data_dir, pcc_th, n_cpu)  # todo: check for dublicate ids in Similar
     main_split_data(project_name, n_merged_files)
     return None
 
