@@ -9,7 +9,11 @@ def main_cif_check(directory: str, n_cpu: int = 1) -> None:
     print('\nChecking format of CIFs')
 
     files = sorted(os.listdir(directory))
-    info_list = np.array_split(files, n_cpu)
+    if len(files) < n_cpu:
+        info_list = np.array_split(files, len(files))
+        n_cpu = len(files)
+    else:
+        info_list = np.array_split(files, n_cpu)
 
     start_time = time.time()
 
