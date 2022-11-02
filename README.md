@@ -1,3 +1,14 @@
+# Installing
+
+smt might give problems. Make sure GCC is updated on your Linux system
+
+$ sudo apt update
+
+$ sudo apt install build-essential
+
+DiffPy-CMI needs to be install as shown on their homepage
+
+
 # Data preperation step
 
 1) simple_cif_converter

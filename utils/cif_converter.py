@@ -20,12 +20,26 @@ def convert_cif(r_path: str, w_path: str, n_cpu: int = 1) -> str:
     w_path = f"{w_path}/CIFs_clean"
     files = os.listdir(r_path)
 
+    if os.path.isdir(w_path):
+        files_cleaned = os.listdir(w_path)
+        diff_files = [file for file in files if file not in files_cleaned]
+        files = diff_files
+        if diff_files == []:
+            print('All files are already cleaned')
+            return w_path
+    else:
+        os.mkdir(w_path)
+
     files_w = return_files(w_path)
     files = sorted([file for file in files if file[-4:] == '.cif'])
 
     print('{} files found'.format(len(files)))
 
-    info_list = np.array_split(files, n_cpu)
+    if len(files) < n_cpu:
+        info_list = np.array_split(files, len(files))
+        n_cpu = len(files)
+    else:
+        info_list = np.array_split(files, n_cpu)
 
     start_time = time.time()
 

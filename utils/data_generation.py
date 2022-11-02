@@ -153,15 +153,34 @@ class simPDFs:
 
 
 
-def get_structures(direct, savedir, sim_range_dict, split, cpu=1, shuffle_list=False):
+def get_structures(direct, savedir, sim_range_dict, split, n_cpu=1, shuffle_list=False):
     files = sorted(os.listdir(direct))
 
     if shuffle_list == True:
         random.shuffle(files)  # Shuffles list
-    files_ph = np.array_split(files, cpu)
+
+    ### check files
+    pdfs = os.listdir(savedir)
+    exists = []
+    for file in pdfs:
+        df = pd.read_hdf(os.path.join(savedir, file))
+        if len(df) != split:
+            os.remove(os.path.join(savedir, file))
+        else:
+            exists.append(file)
+
+    files = [file for file in files if file.rsplit('.')[0] + '.h5' not in pdfs]
+    ###
+
+    if len(files) < n_cpu:
+        files_ph = np.array_split(files, len(files))
+        n_cpu = len(files)
+    else:
+        files_ph = np.array_split(files, n_cpu)
+
     info_list = []
-    for i in range(cpu):
-        info_list.append(['{:0{}d}'.format(i, cpu), direct, savedir, sim_range_dict, split, files_ph[i]])
+    for i in range(n_cpu):
+        info_list.append(['{:0{}d}'.format(i, n_cpu), direct, savedir, sim_range_dict, split, files_ph[i]])
 
     return info_list
 
@@ -191,11 +210,11 @@ def main_pdf_simulatior(stru_path: str, n_cpu: int = 1, n_simulations: int=10) -
     else:
         os.mkdir(savedir)
 
-    info_list = get_structures(stru_path, savedir, sim_range_dict, n_simulations, cpu=n_cpu)
+    info_list = get_structures(stru_path, savedir, sim_range_dict, n_simulations, n_cpu=n_cpu)
 
     start_time = time.time()
     processes = []
-    for i in range(n_cpu):
+    for i in range(len(info_list)):
         p = multiprocessing.Process(target=simPDFs, args=[info_list[i]])
         p.start()
         processes.append(p)

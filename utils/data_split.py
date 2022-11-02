@@ -25,8 +25,10 @@ def add_labels(directory: str) -> None:
     pbar = tqdm(total=len(os.listdir(os.path.join(directory, 'CIFs_clean_data'))))
     for df in pd.read_csv(os.path.join(directory, 'structure_catalog.csv'), index_col=0, chunksize=10_000):
         for idx, row in df.iterrows():
-            files = row['Similar'].split(', ')
-            files = [file.replace("'", '').replace("]", '').replace("[", '') for file in files]
+            files = list([row.Label])
+
+            if isinstance(row.Similar, str):
+                files += row['Similar'].split(', ')
             for jdx, file in enumerate(files):
                 data_df = pd.read_hdf(os.path.join(directory, 'CIFs_clean_data', file))
                 if idx == 0 and jdx == 0:
@@ -34,7 +36,6 @@ def add_labels(directory: str) -> None:
                     trn_len = math.ceil(len(data_df) * .8)
                     vld_len = math.ceil((size - trn_len) / 2)
 
-                data_df = data_df.set_index('filename')
                 data_df = data_df.assign(Label=idx)
 
                 data_df.to_hdf(os.path.join(directory, 'CIFs_clean_data', file), key='df', mode='w')
