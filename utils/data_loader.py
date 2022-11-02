@@ -12,7 +12,7 @@ class Iterator(xgboost.DataIter):
         self._directory = directory
         self._it = 0
         self.drop_list = [
-            'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'Uiso', 'Psize', 'rmin', 'rmax',
+            'filename', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'Uiso', 'Psize', 'rmin', 'rmax',
             'rstep','qmin', 'qmax', 'qdamp', 'delta2', 'Label'
         ]
         # XGBoost will generate some cache files under current directory with the prefix

@@ -40,7 +40,6 @@ def reduce_df(directory: str):
     return None
 
 def get_data(directory: str):
-    head, tail = os.path.split(directory)
     drop_list = [
         'filename', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'Uiso', 'Psize', 'rmin', 'rmax', 'rstep','qmin', 'qmax', 'qdamp', 'delta2'
     ]
@@ -49,7 +48,6 @@ def get_data(directory: str):
     print('\nLoading data')
     pbar = tqdm(total=len(files))
     for i in range(len(files)):
-
         g_i = load_h5(directory + '/' + files[i], drop_list)
         if i == 0:
             data_arr = np.zeros((len(files), len(g_i)))
