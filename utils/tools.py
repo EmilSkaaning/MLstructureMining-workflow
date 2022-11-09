@@ -24,7 +24,13 @@ def return_files(directory: str) -> list:
 
 
 def load_h5(file_path: str, drop_list: list = None) -> pd.DataFrame:
-    df = pd.read_hdf(file_path, start=0, stop=1).drop(drop_list, axis=1).values
+    df = pd.read_hdf(file_path, start=0, stop=1)
+    df = df.drop(drop_list, axis=1)
+    try:
+        df = df.drop(['Label'], axis=1)
+    except KeyError:
+        pass
+    df = df.values
     df = np.array(df[0], dtype=np.float)
     return df
 
