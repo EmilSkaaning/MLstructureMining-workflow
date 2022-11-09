@@ -6,7 +6,7 @@ from utils.data_generation import main_pdf_simulatior
 from utils.compare_data import generate_structure_catalog
 from utils.data_split import main_split_data
 
-def main(stru_directory: str, project_name: str='', n_cpu: int=1, pcc_th: float=0.9, n_simulations: int=3, n_merged_files: int=4) -> None:
+def main(stru_directory: str, project_name: str='', n_cpu: int=1, pcc_th: float=0.9, n_simulations: int=10, n_merged_files: int=1) -> None:
     if project_name == '':
         head, tail = os.path.split(stru_directory)
         ct = str(datetime.datetime.now()).replace(' ', '_').replace(':', '-').replace('.', '-')
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     main(
         #'/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/test_cif',
         '/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/cif',
-        project_name='/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-11-02_14-59-12-953128',
+        #project_name='/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-11-09_08-07-32-863123',
         n_cpu=2,
         pcc_th=.9,
         n_simulations=10,

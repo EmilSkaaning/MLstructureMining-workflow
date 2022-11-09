@@ -90,6 +90,7 @@ def main(directory: str) -> None:
 
 
 if __name__ == '__main__':
-    #main('/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/structure_finder_2022-10-26_10-54-31-503023_100_stru_20_pdfs')
-    #main('/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/structure_finder_2022-10-26_11-00-04-343816_1000_stru_20_pdfs')
-    main('/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/structure_finder_2022-10-26_13-01-32-356873')
+    main('/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-11-09_08-18-11-079379')
+
+
+    #main('/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/structure_finder_2022-10-26_13-01-32-356873')
