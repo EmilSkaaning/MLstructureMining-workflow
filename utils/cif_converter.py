@@ -1,7 +1,10 @@
 import os, sys, re, subprocess, multiprocessing, time
+sys.path.append("..")
 import numpy as np
 from utils.tools import return_files
 from tqdm import tqdm
+from functools import partial
+
 
 def convert_cif(r_path: str, w_path: str, n_cpu: int = 1) -> str:
     """
@@ -35,76 +38,69 @@ def convert_cif(r_path: str, w_path: str, n_cpu: int = 1) -> str:
 
     print('{} files found'.format(len(files)))
 
-    if len(files) < n_cpu:
-        info_list = np.array_split(files, len(files))
-        n_cpu = len(files)
-    else:
-        info_list = np.array_split(files, n_cpu)
-
     start_time = time.time()
 
-    processes = []
-    for i in range(n_cpu):
-        p = multiprocessing.Process(target=converter_call, args=[info_list[i], files_w, r_path, w_path])
-        p.start()
-        processes.append(p)
+    pbar = tqdm(total=len(files))
+    with multiprocessing.Pool(processes=n_cpu) as pool:
+        converter_call_partial = partial(converter_call, files_w=files_w, r_path=r_path, w_path=w_path)
+        for i in pool.imap_unordered(converter_call_partial, files):
+            pbar.update()
 
-    for p in processes:
-        p.join()
+        pool.close()
+        pool.join()
+    pbar.close()
 
     total_time = time.time() - start_time
     print('\nDone, took {:6.1f} h.'.format(total_time / 3600))
     return w_path
 
 
-def converter_call(files: list, files_w: list, r_path: str, w_path: str) -> None:
-    pbar = tqdm(total=len(files))
-    for file in files:
-        if file in files_w:
-            pbar.update()
-            continue
-        new_file = []
+def converter_call(file: str, files_w: list, r_path: str, w_path: str) -> None:
+    if file in files_w:
+        return None
+    new_file = []
+    try:
+        f = open(r_path + '/' + file, 'rb')
+        lines = f.readlines()
+        f.close()
+    except Exception as e:
+        print(e)
+        f = open(r_path + '/' + file, 'rb')
+        lines = f.readlines()
+        f.close()
+
+    check = False
+    for line in lines:
         try:
-            f = open(r_path + '/' + file, 'rb')
-            lines = f.readlines()
-            f.close()
-        except Exception as e:
-            print(e)
-            #subprocess.run(["chmod", "-R", "o+rw", f"/mnt/d/CIFs/{file}"])
-            f = open(r_path + '/' + file, 'rb')
-            lines = f.readlines()
-            f.close()
+            line = line.decode("utf-8")
+        except:
+            return None
 
-            # continue
-        check = False
-        for line in lines:
-            try:
-                line = line.decode("utf-8")
-            except:
-                continue
+        if '_atom_site_type_symbol' in line:
+            check = True
+        elif check == True and 'loop_' in line:
+            check = False
 
-            if '_atom_site_type_symbol' in line:
-                check = True
-            elif check == True and 'loop_' in line:
-                check = False
+        if check:
+            ph = re.findall(r'\d\+', line)
+            for key in ph:
+                line = line.replace(key, '')
 
-            if check:
-                ph = re.findall(r'\d\+', line)
-                for key in ph:
-                    line = line.replace(key, '')
+            ph = re.findall(r'\d\-', line)
+            for key in ph:
+                line = line.replace(key, '')
 
-                ph = re.findall(r'\d\-', line)
-                for key in ph:
-                    line = line.replace(key, '')
+        new_file.append(line)
+    try:
+        f = open(w_path + '/' + '{}.cif'.format(file[:-4]), "w")
+        for new_line in new_file:
+            f.write('{}'.format(new_line))
+        f.close()
+    except Exception as e:
+        print(e)
 
-            new_file.append(line)
-        try:
-            f = open(w_path + '/' + '{}.cif'.format(file[:-4]), "w")
-            for new_line in new_file:
-                f.write('{}'.format(new_line))
-            f.close()
-        except Exception as e:
-            print(e)
-        pbar.update()
-    pbar.close()
     return None
+
+
+if __name__ == '__main__':
+    convert_cif('/mnt/c/Users/ETSK/Desktop/brute/cifs', '/mnt/c/Users/ETSK/Desktop/brute/cifs_cc', 8)

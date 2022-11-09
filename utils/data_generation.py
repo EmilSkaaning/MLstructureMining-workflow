@@ -16,24 +16,22 @@ class simPDFs:
         self.save_dir = info_list[2]
         sim_range = info_list[3]
         split = info_list[4]
-        files = info_list[5]
-        pbar = tqdm(total=len(files))
-        for idx, file in enumerate(files):
-            self.init_df(file)
-            self.genPDFs(
-                file,
-                [sim_range[key][0] if sim_range[key][0]!=None else -1 for key in sim_range.keys()],
-                0
-            )
-            parameters = self.sampleSpace(sim_range, split-1)
-            for i, parameter in enumerate(parameters):
-                self.genPDFs(file, parameter, i+1)
+        file = info_list[5]
 
-            self.csv.set_index('filename')
-            #self.csv.to_csv(self.save_dir + '/' + self.filename, mode='a', header=self.column, index=False)
-            self.csv.to_hdf(self.save_dir + '/' + self.filename, key='df', mode='w')
-            pbar.update()
-        pbar.close()
+        self.init_df(file)
+        self.genPDFs(
+            file,
+            [sim_range[key][0] if sim_range[key][0]!=None else -1 for key in sim_range.keys()],
+            0
+        )
+        parameters = self.sampleSpace(sim_range, split-1)
+        for i, parameter in enumerate(parameters):
+            self.genPDFs(file, parameter, i+1)
+
+        self.csv.set_index('filename')
+        #self.csv.to_csv(self.save_dir + '/' + self.filename, mode='a', header=self.column, index=False)
+        self.csv.to_hdf(self.save_dir + '/' + self.filename, key='df', mode='w')
+
 
 
     def init_df(self, file):
@@ -170,17 +168,10 @@ def get_structures(direct, savedir, sim_range_dict, split, n_cpu=1, shuffle_list
             exists.append(file)
 
     files = [file for file in files if file.rsplit('.')[0] + '.h5' not in pdfs]
-    ###
-
-    if len(files) < n_cpu:
-        files_ph = np.array_split(files, len(files))
-        n_cpu = len(files)
-    else:
-        files_ph = np.array_split(files, n_cpu)
 
     info_list = []
-    for i in range(n_cpu):
-        info_list.append(['{:0{}d}'.format(i, n_cpu), direct, savedir, sim_range_dict, split, files_ph[i]])
+    for i in range(len(files)):
+        info_list.append(['{:0{}d}'.format(i, n_cpu), direct, savedir, sim_range_dict, split, files[i]])
 
     return info_list
 
@@ -213,15 +204,15 @@ def main_pdf_simulatior(stru_path: str, n_cpu: int = 1, n_simulations: int=10) -
     info_list = get_structures(stru_path, savedir, sim_range_dict, n_simulations, n_cpu=n_cpu)
 
     start_time = time.time()
-    processes = []
-    for i in range(len(info_list)):
-        p = multiprocessing.Process(target=simPDFs, args=[info_list[i]])
-        p.start()
-        processes.append(p)
 
-    for p in processes:
-        p.join()
-    p.close()
+    pbar = tqdm(total=len(info_list))
+    with multiprocessing.Pool(processes=n_cpu) as pool:
+        for i in pool.imap_unordered(simPDFs, info_list):
+            pbar.update()
+
+        pool.close()
+        pool.join()
+    pbar.close()
 
     total_time = time.time() - start_time
     print('\nDone, took {:6.1f} h.'.format(total_time / 3600))
