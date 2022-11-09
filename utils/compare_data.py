@@ -36,6 +36,7 @@ def reduce_df(directory: str):
 
     drop_row = list(set(drop_row))
     df = df.drop(drop_row)
+    df = df.reset_index(drop=True)
     df.to_csv(directory)
     return None
 
