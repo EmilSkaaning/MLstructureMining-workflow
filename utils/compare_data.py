@@ -5,35 +5,46 @@ import time, multiprocessing
 from scipy.stats import pearsonr
 from tqdm import tqdm
 from utils.tools import load_h5
+from functools import partial
+
+
 
 def reduce_df(directory: str):
     df = pd.read_csv(directory, index_col=0)
 
     drop_row = []
+    print('Reduce DataFrame')
+
+    pbar = tqdm(total=len(df))
     for idx, row in df.iterrows():
         look_a_like = []
         simulari = row.Similar
         if not isinstance(simulari, str):
+            pbar.update()
             continue
 
         simulari = simulari.split(', ')
 
+        count = 0
         while simulari != []:
             index = simulari[-1]
             sim_row = df.loc[df['Label'] == index]
             sim_idx = sim_row.index[0]
             sim_row = sim_row.Similar.values[0]
 
-            if isinstance(sim_row, str):
+            if count == 0 and isinstance(sim_row, str):
                 [simulari.append(val) for val in sim_row.split(', ')]
 
             look_a_like.append(index)
             drop_row.append(sim_idx)
             simulari.remove(index)
+            count += 1
+
 
         df.iloc[idx]['Similar'] = ', '.join(sorted(list(set(look_a_like))))
         drop_row = list(set(drop_row))
-
+        pbar.update()
+    pbar.close()
     drop_row = list(set(drop_row))
     df = df.drop(drop_row)
     df = df.reset_index(drop=True)
@@ -51,11 +62,18 @@ def get_data(directory: str):
     for i in range(len(files)):
         g_i = load_h5(directory + '/' + files[i], drop_list)
         if i == 0:
-            data_arr = np.zeros((len(files), len(g_i)))
+            AR_SHAPE = (len(files), len(g_i))
+            data_arr = np.ndarray(AR_SHAPE)
+
         data_arr[i] = g_i
 
         pbar.update()
-    return data_arr, files
+
+    shared_array_ph = multiprocessing.RawArray('d', AR_SHAPE[0] * AR_SHAPE[1])
+    shared_array = np.frombuffer(shared_array_ph, dtype=np.float64).reshape(AR_SHAPE)
+
+    np.copyto(shared_array, data_arr)
+    return shared_array, files
 
 
 def pool_pears(data, f_names, directory, pcc_th, n_cpu):
@@ -75,10 +93,12 @@ def pool_pears(data, f_names, directory, pcc_th, n_cpu):
         pbar.update()
     pbar.close()
 
+    print('key')
     for key in compare_dict.keys():
         str_list = [f_names[idx + (1 + key)] for idx, i in enumerate(compare_dict[key]) if i >= pcc_th]
         compare_dict[key] = ', '.join(str_list)
 
+    print('DataFrame')
     df = pd.DataFrame({'Label': f_names})
     df['Similar'] = compare_dict.values()
     df.to_csv(directory)
@@ -94,7 +114,7 @@ def generate_structure_catalog(directory: str, pcc_th: float, n_cpu: int = 2):
     data, f_names = get_data(directory)
 
     # chunk idx.
-    df = pool_pears(
+    _ = pool_pears(
         data,
         f_names,
         os.path.join(head, 'structure_catalog.csv'),
@@ -112,6 +132,7 @@ def mp(chunk, data):
     manager = multiprocessing.Manager()
     return_dict = manager.dict()
     processes = []
+
     for i in chunk:
         p = multiprocessing.Process(target=pears_row, args=[i, data, return_dict,])
         processes.append(p)
