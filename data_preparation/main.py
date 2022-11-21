@@ -26,8 +26,8 @@ if __name__ == '__main__':
     main(
         #'/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/test_cif',
         '/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/cif',
-        #project_name='/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-11-09_08-07-32-863123',
-        n_cpu=2,
+        #.project_name='/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-11-21_15-13-51-995502',
+        n_cpu=12,
         pcc_th=.9,
         n_simulations=10,
         n_merged_files=2
