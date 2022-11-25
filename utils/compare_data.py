@@ -99,44 +99,15 @@ def pool_pears(data, f_names, directory, pcc_th, n_cpu):
     pbar = tqdm(total=len(data))
     index_adder = 0
     while data != []:
-        print('\n',len(data), len(data[0]))
         return_dict = mp(data, index_adder=index_adder)
         index_adder += n_cpu
 
         for key in return_dict.keys():
-            print(return_dict[key])
             str_list = [f_names[idx + (1 + key)] for idx, i in enumerate(return_dict[key]) if i >= pcc_th]
-            print(', '.join(str_list))
             compare_dict[key] = ', '.join(str_list)
         data.pop(0)
         pbar.update()
     pbar.close()
-
-
-
-    print('DataFrame')
-    df = pd.DataFrame({'Label': f_names})
-    df['Similar'] = compare_dict.values()
-    df.to_csv(directory)
-    sys.exit()
-
-    for i in range(0, len(data), chunk_size):
-        end_idx = i + chunk_size
-        if end_idx > len(data):
-            end_idx = len(data)
-
-        chunk = np.arange(i, end_idx)
-        return_dict = mp(chunk, data)
-        for key in return_dict.keys():
-            #print(return_dict[key])
-            str_list = [f_names[idx + (1 + key)] for idx, i in enumerate(return_dict[key]) if i >= pcc_th]
-            #print(', '.join(str_list))
-            compare_dict[key] = ', '.join(str_list)
-            #compare_dict[key] = return_dict[key]
-        pbar.update()
-    pbar.close()
-
-
 
     print('DataFrame')
     df = pd.DataFrame({'Label': f_names})
@@ -196,12 +167,4 @@ def pears_row(idx, arr, index_adder, return_dict):
             #print('pears', pears)
             pears_l.append(pears)
     return_dict[idx + index_adder] = pears_l
-
-    #idx_list = np.arange(len(arr) - (idx + 1)) + (idx + 1)
-    #return_dict[idx] = list(map(lambda x: pear(arr[idx], arr[x]), idx_list))
-
-
-def pear(x1,x2):
-    pears, _ = pearsonr(x1, x2)
-    return pears
 
