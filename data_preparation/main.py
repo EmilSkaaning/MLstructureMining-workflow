@@ -17,7 +17,7 @@ def main(stru_directory: str, project_name: str='', n_cpu: int=1, pcc_th: float=
     main_cif_check(cif_dir, n_cpu)
     data_dir = main_pdf_simulatior(cif_dir, n_cpu, n_simulations)
     generate_structure_catalog(data_dir, pcc_th, n_cpu)  # todo: check for dublicate ids in Similar
-    main_split_data(project_name, n_merged_files)
+    #main_split_data(project_name, n_merged_files)  # todo: updated via 'structure_catalog_merged'
     return None
 
 
@@ -27,8 +27,8 @@ if __name__ == '__main__':
         #'/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/test_cif',
         '/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/cif',
         #.project_name='/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-11-21_15-13-51-995502',
-        n_cpu=12,
-        pcc_th=.9,
-        n_simulations=10,
+        n_cpu=2,
+        pcc_th=.5,
+        n_simulations=2,
         n_merged_files=2
     )
