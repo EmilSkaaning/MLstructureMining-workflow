@@ -11,66 +11,65 @@ from functools import partial
 
 def reduce_df(directory: str):
     print('Reduce DataFrame')
-
     df = pd.read_csv(directory, index_col=0)
 
-    df = df.sort_values('Label', ascending=False)  # df = df.iloc[::-1]
-
+    removed, df_idx = [], 0
     pbar = tqdm(total=len(df))
-    for idx, row in df.iterrows():
-        simulari = row.Similar
+    cleaned_df = pd.DataFrame({'Label': [], 'Similar': []})
+
+    for ni_row, (idx, irow) in enumerate(df.iterrows()):
+        #print(f'\n{ni_row}, {idx}, {irow.Label}')
+        simulari, label = irow.Similar, irow.Label
+        if label in removed:
+            pbar.update()
+            continue
         if not isinstance(simulari, str):
-            pass
-        else:
-            simulari = row.Similar.split(', ')
-            add_list = []
-            # print('\n', row.Label)
-            for i in simulari:
-                # print(i)
-                ph_val = df.loc[df['Label'] == i].Similar.values
-                # print(ph_val, list(ph_val)==[])
-                # print(df.loc[df['Label'] == i])
-                if list(ph_val) == []:
-                    pass
-                elif isinstance(ph_val[0], str):
-                    for val in ph_val:
-                        add_list.append(val)
-                    # print(ph_val, 'jaaa')
+            # pbar.update()
+            # print({'Label': label, 'Similar': simulari})
+            cleaned_df = cleaned_df.append({'Label': label, 'Similar': simulari},
+                                           ignore_index=True)
+            continue
 
-            if add_list != []:
-                add_list = list(add_list)
-                # print('\n', row.Label)
-                # print(row.Similar)
-                # print(add_list)
-                # print('updated')
-                simulari += add_list
+        simulari = simulari.split(', ')
+        simulari.append(label)
+        simulari = sorted(simulari)
+        sim_old = []
 
-                # print(simulari)
-                simulari_str = ', '.join(sorted(list(set(simulari))))
-                df.loc[idx]['Similar'] = simulari_str
-                simulari_str = df.loc[idx]['Similar'].split(', ')
-                # print(simulari_str)
-                df.loc[idx]['Similar'] = ', '.join(sorted(list(set(simulari_str))))
-                # print(df.loc[idx]['Similar'])
-                # print(df.head(10))
-                # sys.exit()
-            # print(row.Similar)
+        while simulari != sim_old:
+            sim_old = simulari.copy()
+            new_df = df.loc[df['Label'].isin(simulari)]
 
-            for i in simulari:
-                try:
-                    index = df.loc[df['Label'] == i].index[0]
-                except IndexError:
-                    continue
-                # print('drop',index, idx)
-                # print(df.head(10))
-                df = df.drop(index)
-                # print(df.head(10))
+            new_label = new_df.Label.values
+            new_similar = new_df.Similar.values
+
+            new_similar = [val.split(', ') for val in new_similar if isinstance(val, str)]
+            # print(new_similar)
+            new_similar = [item for sublist in new_similar for item in sublist]
+            # print(new_label, new_similar)
+            simulari = [*new_label, *new_similar]
+
+            # print(simulari)
+            simulari = sorted(list(set(simulari)))
+            # print(simulari)
+            # print(simulari!= sim_old)
+
+        new_idx = df.loc[df['Label'].isin(simulari)].index.values
+        # print(new_idx[0], simulari[1:])
+        df = df.drop(new_idx[1:])
+        # df.iloc[new_idx[0]]['Similar'] = simulari[1:]
+        removed = [*removed, *simulari[1:]]
+        # print(simulari)
+        # print(df.head())
+
+        # df2 = pd.DataFrame(simulari[0], simulari[1:], columns=['Label', 'Similar'], index=[df_idx])
+        cleaned_df = cleaned_df.append({'Label': simulari[0], 'Similar': ', '.join(simulari[1:])}, ignore_index=True)
 
         pbar.update()
+    pbar.close()
 
-    df = df.sort_values('Label', ascending=True)
-    df = df.reset_index(drop=True)
-    df.to_csv(directory[:-4] + '_merged.csv')
+    cleaned_df = cleaned_df.sort_values('Label', ascending=True)
+    cleaned_df = cleaned_df.reset_index(drop=True)
+    cleaned_df.to_csv(directory[:-4] + '_merged.csv')
     return None
 
 def get_data(directory: str, n_cpu: int):

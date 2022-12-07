@@ -21,7 +21,7 @@ def convert_cif(r_path: str, w_path: str, n_cpu: int = 1) -> str:
     """
     print('\nConverting CIFs to DiffPy-CMI format')
     w_path = f"{w_path}/CIFs_clean"
-    files = os.listdir(r_path)[:10]
+    files = os.listdir(r_path)
 
     if os.path.isdir(w_path):
         files_cleaned = os.listdir(w_path)
