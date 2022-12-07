@@ -10,45 +10,67 @@ from functools import partial
 
 
 def reduce_df(directory: str):
+    print('Reduce DataFrame')
+
     df = pd.read_csv(directory, index_col=0)
 
-    drop_row = []
-    print('Reduce DataFrame')
+    df = df.sort_values('Label', ascending=False)  # df = df.iloc[::-1]
 
     pbar = tqdm(total=len(df))
     for idx, row in df.iterrows():
-        look_a_like = []
         simulari = row.Similar
         if not isinstance(simulari, str):
-            pbar.update()
-            continue
+            pass
+        else:
+            simulari = row.Similar.split(', ')
+            add_list = []
+            # print('\n', row.Label)
+            for i in simulari:
+                # print(i)
+                ph_val = df.loc[df['Label'] == i].Similar.values
+                # print(ph_val, list(ph_val)==[])
+                # print(df.loc[df['Label'] == i])
+                if list(ph_val) == []:
+                    pass
+                elif isinstance(ph_val[0], str):
+                    for val in ph_val:
+                        add_list.append(val)
+                    # print(ph_val, 'jaaa')
 
-        simulari = simulari.split(', ')
+            if add_list != []:
+                add_list = list(add_list)
+                # print('\n', row.Label)
+                # print(row.Similar)
+                # print(add_list)
+                # print('updated')
+                simulari += add_list
 
-        count = 0
-        while simulari != []:
-            index = simulari[-1]
-            sim_row = df.loc[df['Label'] == index]
-            sim_idx = sim_row.index[0]
-            sim_row = sim_row.Similar.values[0]
+                # print(simulari)
+                simulari_str = ', '.join(sorted(list(set(simulari))))
+                df.loc[idx]['Similar'] = simulari_str
+                simulari_str = df.loc[idx]['Similar'].split(', ')
+                # print(simulari_str)
+                df.loc[idx]['Similar'] = ', '.join(sorted(list(set(simulari_str))))
+                # print(df.loc[idx]['Similar'])
+                # print(df.head(10))
+                # sys.exit()
+            # print(row.Similar)
 
-            if count == 0 and isinstance(sim_row, str):
-                [simulari.append(val) for val in sim_row.split(', ')]
+            for i in simulari:
+                try:
+                    index = df.loc[df['Label'] == i].index[0]
+                except IndexError:
+                    continue
+                # print('drop',index, idx)
+                # print(df.head(10))
+                df = df.drop(index)
+                # print(df.head(10))
 
-            look_a_like.append(index)
-            drop_row.append(sim_idx)
-            simulari.remove(index)
-            count += 1
-
-
-        df.iloc[idx]['Similar'] = ', '.join(sorted(list(set(look_a_like))))
-        drop_row = list(set(drop_row))
         pbar.update()
-    pbar.close()
-    drop_row = list(set(drop_row))
-    df = df.drop(drop_row)
+
+    df = df.sort_values('Label', ascending=True)
     df = df.reset_index(drop=True)
-    df.to_csv(directory[:-4]+'_merged.csv')
+    df.to_csv(directory[:-4] + '_merged.csv')
     return None
 
 def get_data(directory: str, n_cpu: int):

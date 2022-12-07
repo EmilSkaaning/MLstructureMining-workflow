@@ -23,7 +23,7 @@ def main_split_data(directory: str, n_merged_files: int) -> None:
 
 def add_labels(directory: str) -> None:
     pbar = tqdm(total=len(os.listdir(os.path.join(directory, 'CIFs_clean_data'))))
-    for df in pd.read_csv(os.path.join(directory, 'structure_catalog.csv'), index_col=0, chunksize=10_000):
+    for df in pd.read_csv(os.path.join(directory, 'structure_catalog_merged.csv'), index_col=0, chunksize=10_000):
         for idx, row in df.iterrows():
             files = list([row.Label])
 
