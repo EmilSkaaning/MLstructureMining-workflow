@@ -153,7 +153,7 @@ def generate_structure_catalog(directory: str, pcc_th: float, n_cpu: int = 2):
         n_cpu
     )
 
-    reduce_df(os.path.join(head, 'structure_catalog.csv'))
+    #reduce_df(os.path.join(head, 'structure_catalog.csv'))
 
     total_time = time.time() - start
     print('\nDone, took {:6.1f} h.'.format(total_time / 3600))
