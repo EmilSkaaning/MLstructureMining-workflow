@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.metrics import log_loss, accuracy_score
 
 
-def main(directory: str) -> None:
+def main_train(directory: str) -> None:
     ct = str(datetime.datetime.now()).replace(' ', '_').replace(':', '-').replace('.', '-')
     project_name = f'{directory}/results_{ct}'
     os.mkdir(project_name)
@@ -94,13 +94,9 @@ def main(directory: str) -> None:
 
 
 if __name__ == '__main__':
-<<<<<<< HEAD
-    main('/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-12-08_11-02-03-942484')
-=======
-    #main('/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/structure_finder_2022-10-26_10-54-31-503023_100_stru_20_pdfs')
->>>>>>> d4234731e8365fc900795437cc085c39628b7e1e
+    main_train('/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-12-20_08-15-44-512547')
 
 
-    # main('/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/structure_finder_2022-10-26_11-00-04-343816_1000_stru_20_pdfs')
+    # main_train('/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/structure_finder_2022-10-26_11-00-04-343816_1000_stru_20_pdfs')
 
-    main('/mnt/e/structure_finder_2022-10-25_16-22-52-581626')
+    #main_train('/mnt/e/structure_finder_2022-10-25_16-22-52-581626')

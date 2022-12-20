@@ -6,17 +6,16 @@ from diffpy.srreal.pdfcalculator import PDFCalculator
 import pandas as pd
 from smt.sampling_methods import LHS
 from utils.tools import return_files
+from functools import partial
 
 random.seed(14)  # 'Random' numbers
 
 
 class simPDFs:
-    def __init__(self, info_list):
-        self.CIFdir = info_list[1]
-        self.save_dir = info_list[2]
-        sim_range = info_list[3]
-        split = info_list[4]
-        file = info_list[5]
+    def __init__(self, file, cif_dir, save_dir, sim_range, split):
+        self.CIFdir = cif_dir
+        self.save_dir = save_dir
+        #file = info_list[5]
 
         self.init_df(file)
         self.genPDFs(
@@ -30,7 +29,7 @@ class simPDFs:
 
         self.csv.set_index('filename')
         #self.csv.to_csv(self.save_dir + '/' + self.filename, mode='a', header=self.column, index=False)
-        self.csv.to_hdf(self.save_dir + '/' + self.filename, key='df', mode='w')
+        #self.csv.to_hdf(self.save_dir + '/' + self.filename, key='df', mode='w')
 
 
 
@@ -95,7 +94,7 @@ class simPDFs:
 
         g0 /= np.amax(g0)
 
-        ph_row = np.concatenate(([clusterFile + "{:05d}".format(index), a, b, c, alpha, beta, gamma, parameter[4],
+        ph_row = np.concatenate(([clusterFile.rsplit('.', 1)[0], a, b, c, alpha, beta, gamma, parameter[4],
                                   parameter[5], self.par_dict['rmin'], self.par_dict['rmax'], self.par_dict['rstep'], parameter[0], parameter[1], parameter[2],
                                   parameter[3]], g0), axis=0)  # Make header
         ph_row = pd.DataFrame(ph_row)
@@ -151,7 +150,7 @@ class simPDFs:
 
 
 
-def get_structures(direct, savedir, sim_range_dict, split, n_cpu=1, shuffle_list=False):
+def get_structures(direct, savedir, sim_range_dict, split, n_merged_files, n_cpu=1, shuffle_list=False):
     files = sorted(os.listdir(direct))
 
     if shuffle_list == True:
@@ -168,15 +167,32 @@ def get_structures(direct, savedir, sim_range_dict, split, n_cpu=1, shuffle_list
             exists.append(file)
 
     files = [file for file in files if file.rsplit('.')[0] + '.h5' not in pdfs]
+    files = np.array_split(files, n_merged_files)
 
     info_list = []
     for i in range(len(files)):
-        info_list.append(['{:0{}d}'.format(i, n_cpu), direct, savedir, sim_range_dict, split, files[i]])
+        info_list.append([f'{i:08}', direct, savedir, sim_range_dict, split, list(files[i])])
 
     return info_list
 
 
-def main_pdf_simulatior(stru_path: str, n_cpu: int = 1, n_simulations: int=10) -> str:
+def pool_caller(info_l, n_cpu):
+
+    with multiprocessing.Pool(processes=n_cpu) as pool:
+        simPDFs_p = partial(simPDFs, cif_dir=info_l[1], save_dir=info_l[2], sim_range=info_l[3], split=info_l[4])
+        for i in pool.imap_unordered(simPDFs_p, info_l[5]):
+            if 'df' in locals():
+                df = pd.concat([df, i.csv.copy()])
+            else:
+                df = i.csv.copy()
+        pool.close()
+        pool.join()
+
+    df.to_csv(f'{info_l[2]}/{info_l[0]}.csv')
+
+
+
+def main_pdf_simulatior(stru_path: str, n_cpu: int = 1, n_simulations: int=10, n_merged_files: int=1) -> str:
     print('\nSimulating PDFs')
 
     savedir = f'{stru_path}_data'
@@ -201,17 +217,15 @@ def main_pdf_simulatior(stru_path: str, n_cpu: int = 1, n_simulations: int=10) -
     else:
         os.mkdir(savedir)
 
-    info_list = get_structures(stru_path, savedir, sim_range_dict, n_simulations, n_cpu=n_cpu)
+    info_list = get_structures(stru_path, savedir, sim_range_dict, n_simulations, n_merged_files, n_cpu=n_cpu)
 
     start_time = time.time()
 
     pbar = tqdm(total=len(info_list))
-    with multiprocessing.Pool(processes=n_cpu) as pool:
-        for i in pool.imap_unordered(simPDFs, info_list):
-            pbar.update()
 
-        pool.close()
-        pool.join()
+    for info_l in info_list:
+        pool_caller(info_l, n_cpu)
+        pbar.update()
     pbar.close()
 
     total_time = time.time() - start_time
