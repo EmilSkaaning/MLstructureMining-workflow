@@ -1,6 +1,7 @@
-import os, sys, xgboost, shutil, datetime, yaml
+import os, sys, xgboost, shutil, datetime, yaml, time
 sys.path.append("..")
-from utils.data_loader import get_data_splits
+#from utils.data_loader import get_data_splits
+from utils.data_loader_v2 import get_data_splits_from_clean_data
 from utils.tools import accuracy_top_x
 from utils.plotting import plot_loss_curve
 import pandas as pd
@@ -14,17 +15,16 @@ def main(directory: str) -> None:
     project_name = f'{directory}/results_{ct}'
     os.mkdir(project_name)
 
-    trn_xy, vld_xy, tst_xy, eval_set = get_data_splits(directory, project_name)
-
+    trn_xy, vld_xy, tst_xy, eval_set, n_classes = get_data_splits_from_clean_data(directory, project_name)
     para = {
         'hp': {
             "objective": "multi:softprob",  #'multi:softmax',
             "eval_metric": "mlogloss",  # auc, merror, mlogloss
-            "num_class": len(pd.read_csv(os.path.join(directory, "structure_catalog.csv"))),
+            "num_class": n_classes,
             "verbosity": 1,
             "nthread": 12,
             "subsample": 1,  # default: 1
-            "max_depth": 1000,  # default: 6
+            "max_depth": 10_000,  # default: 6
             "tree_method": "hist",  # default: "auto",
             "max_bin": 256,  # default: 256
         },
@@ -35,6 +35,7 @@ def main(directory: str) -> None:
 
     # Other tree methods including ``hist`` and ``gpu_hist`` also work, but has some caveats
     # as noted in following sections.
+    start_time = time.time()
     booster = xgboost.train(para['hp'],
         dtrain=trn_xy,
         num_boost_round=para['num_boost_round'],
@@ -42,6 +43,9 @@ def main(directory: str) -> None:
         evals_result=eval_dict,
         early_stopping_rounds=para["early_stopping_rounds"]
     )
+
+    total_time = time.time() - start_time
+    print('\nTraining, took {:6.1f} h.'.format(total_time / 3600))
 
     booster.save_model(os.path.join(project_name, "xgb_model.bin"))
     pred = booster.predict(tst_xy)
@@ -90,7 +94,9 @@ def main(directory: str) -> None:
 
 
 if __name__ == '__main__':
-    main('/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-12-07_10-31-34-414272')
+    #main('/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/structure_finder_2022-10-26_10-54-31-503023_100_stru_20_pdfs')
 
 
-    #main('/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/structure_finder_2022-10-26_13-01-32-356873')
+    # main('/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/structure_finder_2022-10-26_11-00-04-343816_1000_stru_20_pdfs')
+
+    main('/mnt/e/structure_finder_2022-10-25_16-22-52-581626')
