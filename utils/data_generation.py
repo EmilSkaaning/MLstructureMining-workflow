@@ -153,20 +153,19 @@ class simPDFs:
 def get_structures(direct, savedir, sim_range_dict, split, n_merged_files, n_cpu=1, shuffle_list=False):
     files = sorted(os.listdir(direct))
 
-    if shuffle_list == True:
-        random.shuffle(files)  # Shuffles list
-
-    ### check files
     pdfs = os.listdir(savedir)
     exists = []
     for file in pdfs:
-        df = pd.read_hdf(os.path.join(savedir, file))
-        if len(df) != split:
+        df = pd.read_csv(os.path.join(savedir, file))
+
+        if len(df) != split*n_merged_files:
             os.remove(os.path.join(savedir, file))
         else:
             exists.append(file)
 
-    files = [file for file in files if file.rsplit('.')[0] + '.h5' not in pdfs]
+    files = [file for file in files if file.rsplit('.')[0] + '.csv' not in pdfs]
+    if len(files) < n_merged_files:
+        n_merged_files = len(files)
     files = np.array_split(files, n_merged_files)
 
     info_list = []

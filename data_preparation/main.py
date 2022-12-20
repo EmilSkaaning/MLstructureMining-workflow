@@ -25,16 +25,16 @@ def main(stru_directory: str, project_name: str='', n_cpu: int=1, pcc_th: float=
 
 
 if __name__ == '__main__':
+    n_cpu = 14
     project = main(
         #'/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/test_cif',
         #'/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/small_test_cif',
-        '/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/cif_small',
+        '/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/cifs_test_20_000',
         #project_name='/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-12-20_08-15-44-512547',
-        #'C:/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-12-08_11-02-03-942484'
-        n_cpu=6,
+        n_cpu=n_cpu,
         pcc_th=.5,
-        n_simulations=10,
-        n_merged_files=2
+        n_simulations=100,
+        n_merged_files=3
     )
 
-    main_train(project)
+    main_train(project, n_cpu=n_cpu)

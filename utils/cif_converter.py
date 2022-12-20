@@ -1,6 +1,5 @@
 import os, sys, re, subprocess, multiprocessing, time
 sys.path.append("..")
-import numpy as np
 from utils.tools import return_files
 from tqdm import tqdm
 from functools import partial
@@ -103,4 +102,4 @@ def converter_call(file: str, files_w: list, r_path: str, w_path: str) -> None:
 
 
 if __name__ == '__main__':
-    convert_cif('/mnt/c/Users/ETSK/Desktop/brute/cifs', '/mnt/c/Users/ETSK/Desktop/brute/cifs_cc', 8)
+    convert_cif('/mnt/c/Users/ETSK/Desktop/brute/cifs', '/mnt/c/Users/ETSK/Desktop/brute/cifs_cc', 1)
