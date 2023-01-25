@@ -176,7 +176,6 @@ def get_structures(direct, savedir, sim_range_dict, split, n_merged_files, n_cpu
 
 
 def pool_caller(info_l, n_cpu):
-
     with multiprocessing.Pool(processes=n_cpu) as pool:
         simPDFs_p = partial(simPDFs, cif_dir=info_l[1], save_dir=info_l[2], sim_range=info_l[3], split=info_l[4])
         for i in pool.imap_unordered(simPDFs_p, info_l[5]):
@@ -191,7 +190,7 @@ def pool_caller(info_l, n_cpu):
 
 
 
-def main_pdf_simulatior(stru_path: str, n_cpu: int = 1, n_simulations: int=10, n_merged_files: int=1) -> str:
+def main_pdf_simulatior(stru_path: str, n_cpu: int = 1, n_simulations: int=10, n_merged_files: int=-1) -> str:
     print('\nSimulating PDFs')
 
     savedir = f'{stru_path}_data'

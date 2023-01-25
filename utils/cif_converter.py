@@ -88,17 +88,37 @@ def converter_call(file: str, files_w: list, r_path: str, w_path: str) -> None:
             ph = re.findall(r'\d\-', line)
             for key in ph:
                 line = line.replace(key, '')
-
         new_file.append(line)
-    try:
-        f = open(w_path + '/' + '{}.cif'.format(file[:-4]), "w")
-        for new_line in new_file:
-            f.write('{}'.format(new_line))
-        f.close()
-    except Exception as e:
-        print(e)
+
+    f = open(w_path + '/' + '{}.cif'.format(file[:-4]), "w")
+    for new_line in new_file:
+        old = new_line
+        new_line = fix_decimals(new_line)
+
+        f.write('{}'.format(new_line))
+    f.close()
 
     return None
+
+
+def fix_decimals(line):
+    if '.1111 ' in line:
+        line = line.replace('.1111', '.11111')
+    if '.111111 ' in line:
+        line = line.replace('.111111', '.11111')
+    if '.8333 ' in line:
+        line = line.replace('.8333', '.83333')
+    if '.6667 ' in line:
+        line = line.replace('.6667', '.66667')
+    if '.6666 ' in line:
+        line = line.replace('.6666', '.66666')
+    if '.666666 ' in line:
+        line = line.replace('.666666', '.66666')
+    if '.3333 ' in line:
+        line = line.replace('.3333', '.33333')
+    if '.333333 ' in line:
+        line = line.replace('.333333', '.33333')
+    return line
 
 
 if __name__ == '__main__':
