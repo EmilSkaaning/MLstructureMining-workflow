@@ -28,13 +28,12 @@ class simPDFs:
             self.genPDFs(file, parameter, i+1)
 
         self.csv.set_index('filename')
-        #self.csv.to_csv(self.save_dir + '/' + self.filename, mode='a', header=self.column, index=False)
-        #self.csv.to_hdf(self.save_dir + '/' + self.filename, key='df', mode='w')
+        self.csv.to_csv(self.save_dir + '/' + self.filename)
 
 
 
     def init_df(self, file):
-        self.filename = f'{file[:-4]}.h5'
+        self.filename = f'{file[:-4]}.csv'
         self.sim_para = [
             'filename', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'Uiso', 'Psize', 'rmin', 'rmax', 'rstep','qmin', 'qmax', 'qdamp', 'delta2'
         ]
@@ -94,7 +93,7 @@ class simPDFs:
 
         g0 /= np.amax(g0)
 
-        ph_row = np.concatenate(([clusterFile.rsplit('.', 1)[0], a, b, c, alpha, beta, gamma, parameter[4],
+        ph_row = np.concatenate(([clusterFile.rsplit('.',1)[0] + "_{:05d}".format(index), a, b, c, alpha, beta, gamma, parameter[4],
                                   parameter[5], self.par_dict['rmin'], self.par_dict['rmax'], self.par_dict['rstep'], parameter[0], parameter[1], parameter[2],
                                   parameter[3]], g0), axis=0)  # Make header
         ph_row = pd.DataFrame(ph_row)
@@ -150,7 +149,7 @@ class simPDFs:
 
 
 
-def get_structures(direct, savedir, sim_range_dict, split, n_merged_files, n_cpu=1, shuffle_list=False):
+def get_structures(direct, savedir, split):
     files = sorted(os.listdir(direct))
 
     pdfs = os.listdir(savedir)
@@ -158,39 +157,16 @@ def get_structures(direct, savedir, sim_range_dict, split, n_merged_files, n_cpu
     for file in pdfs:
         df = pd.read_csv(os.path.join(savedir, file))
 
-        if len(df) != split*n_merged_files:
+        if len(df) != split:
             os.remove(os.path.join(savedir, file))
         else:
             exists.append(file)
 
     files = [file for file in files if file.rsplit('.')[0] + '.csv' not in pdfs]
-    if len(files) < n_merged_files:
-        n_merged_files = len(files)
-    files = np.array_split(files, n_merged_files)
-
-    info_list = []
-    for i in range(len(files)):
-        info_list.append([f'{i:08}', direct, savedir, sim_range_dict, split, list(files[i])])
-
-    return info_list
+    return files
 
 
-def pool_caller(info_l, n_cpu):
-    with multiprocessing.Pool(processes=n_cpu) as pool:
-        simPDFs_p = partial(simPDFs, cif_dir=info_l[1], save_dir=info_l[2], sim_range=info_l[3], split=info_l[4])
-        for i in pool.imap_unordered(simPDFs_p, info_l[5]):
-            if 'df' in locals():
-                df = pd.concat([df, i.csv.copy()])
-            else:
-                df = i.csv.copy()
-        pool.close()
-        pool.join()
-
-    df.to_csv(f'{info_l[2]}/{info_l[0]}.csv')
-
-
-
-def main_pdf_simulatior(stru_path: str, n_cpu: int = 1, n_simulations: int=10, n_merged_files: int=-1) -> str:
+def main_pdf_simulatior(stru_path: str, n_cpu: int = 1, n_simulations: int=10) -> str:
     print('\nSimulating PDFs')
 
     savedir = f'{stru_path}_data'
@@ -215,15 +191,17 @@ def main_pdf_simulatior(stru_path: str, n_cpu: int = 1, n_simulations: int=10, n
     else:
         os.mkdir(savedir)
 
-    info_list = get_structures(stru_path, savedir, sim_range_dict, n_simulations, n_merged_files, n_cpu=n_cpu)
+    files = get_structures(stru_path, savedir, sim_range_dict)
 
     start_time = time.time()
+    pbar = tqdm(total=len(files))
+    with multiprocessing.Pool(processes=n_cpu) as pool:
+        simPDFs_p = partial(simPDFs, cif_dir=stru_path, save_dir=savedir, sim_range=sim_range_dict, split=n_simulations)
+        for i in pool.imap_unordered(simPDFs_p, files):
+            pbar.update()
 
-    pbar = tqdm(total=len(info_list))
-
-    for info_l in info_list:
-        pool_caller(info_l, n_cpu)
-        pbar.update()
+        pool.close()
+        pool.join()
     pbar.close()
 
     total_time = time.time() - start_time

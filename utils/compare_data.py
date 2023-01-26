@@ -4,7 +4,7 @@ import numpy as np
 import time, multiprocessing
 from scipy.stats import pearsonr
 from tqdm import tqdm
-from utils.tools import load_h5
+from utils.tools import load_csv
 from functools import partial
 
 
@@ -82,7 +82,7 @@ def get_data(directory: str, n_cpu: int):
     pbar = tqdm(total=len(files))
     count, np_list_chunks = 0, []
     for i in range(len(files)):
-        g_i = load_h5(directory + '/' + files[i], drop_list)
+        g_i = load_csv(directory + '/' + files[i], drop_list)
 
         if count == 0:
             if len(files) - i >= n_cpu:
