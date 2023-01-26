@@ -23,8 +23,8 @@ def return_files(directory: str) -> list:
     return files
 
 
-def load_h5(file_path: str, drop_list: list = None) -> pd.DataFrame:
-    df = pd.read_hdf(file_path, start=0, stop=1)
+def load_csv(file_path: str, drop_list: list = None) -> pd.DataFrame:
+    df = pd.read_csv(file_path, index_col=0, nrows=0)
     df = df.drop(drop_list, axis=1)
     try:
         df = df.drop(['Label'], axis=1)

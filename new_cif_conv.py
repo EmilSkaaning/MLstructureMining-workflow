@@ -3,7 +3,43 @@ sys.path.append("..")
 from utils.tools import return_files
 from tqdm import tqdm
 from functools import partial
+from diffpy.Structure import loadStructure, Structure, Lattice
+from diffpy.srreal.pdfcalculator import PDFCalculator
+import os, multiprocessing, time
+from tqdm import tqdm
+import numpy as np
+from functools import partial
 
+
+def remove_corrupt_cifs(file: str, directory: str) -> None:
+    try:
+        stru = loadStructure(directory + '/' + file)
+        stru.U11 = 0.005
+        stru.U22 = 0.005
+        stru.U33 = 0.005
+        stru.U12 = 0
+        stru.U13 = 0
+        stru.U23 = 0
+        PDFcalc = PDFCalculator(rmin=0, rmax=30, rstep=0.1,
+                                qmin=0.7, qmax=20, qdamp=0.04, delta2=2)
+        r0, g0 = PDFcalc(stru)
+        max_val = np.amax(g0)
+        if max_val==0:
+            #os.remove(directory + '/' + file)
+            return 1
+        g0 /= max_val
+
+        idx = np.argmax(g0)
+        if r0[idx] < 0.8:
+            import matplotlib.pyplot as plt
+            plt.plot(r0, g0)
+            plt.savefig('test.png')
+            print(file)
+            sys.exit()
+    except Exception as e:
+        #os.remove(directory + '/' + file)
+        return 1
+    return 0
 
 def convert_cif(r_path: str, w_path: str, n_cpu: int = 1) -> str:
     """
@@ -88,38 +124,30 @@ def converter_call(file: str, files_w: list, r_path: str, w_path: str) -> None:
             ph = re.findall(r'\d\-', line)
             for key in ph:
                 line = line.replace(key, '')
+
         new_file.append(line)
-
-    f = open(w_path + '/' + '{}.cif'.format(file[:-4]), "w")
-    for new_line in new_file:
-        old = new_line
-        new_line = fix_decimals(new_line)
-
-        f.write('{}'.format(new_line))
-    f.close()
+    try:
+        f = open(w_path + '/' + '{}.cif'.format(file[:-4]), "w")
+        for new_line in new_file:
+            f.write('{}'.format(new_line))
+        f.close()
+    except Exception as e:
+        print(e)
 
     return None
 
 
-def fix_decimals(line):
-    if '.1111 ' in line:
-        line = line.replace('.1111', '.11111')
-    if '.111111 ' in line:
-        line = line.replace('.111111', '.11111')
-    if '.8333 ' in line:
-        line = line.replace('.8333', '.83333')
-    if '.6667 ' in line:
-        line = line.replace('.6667', '.66667')
-    if '.6666 ' in line:
-        line = line.replace('.6666', '.66666')
-    if '.666666 ' in line:
-        line = line.replace('.666666', '.66666')
-    if '.3333 ' in line:
-        line = line.replace('.3333', '.33333')
-    if '.333333 ' in line:
-        line = line.replace('.333333', '.33333')
-    return line
-
-
 if __name__ == '__main__':
-    convert_cif('/mnt/c/Users/ETSK/Desktop/brute/cifs', '/mnt/c/Users/ETSK/Desktop/brute/cifs_cc', 1)
+    src = '/mnt/e/CIFs'
+    dst = '/mnt/e/CIFs_test'
+    files = os.listdir(src)[517:]
+
+    print(len(files))
+
+    for f in files:
+        remove_corrupt_cifs(f, src)
+        converter_call(f, [], src, dst)
+        #sys.exit()
+
+
+    #convert_cif('/mnt/c/Users/ETSK/Desktop/brute/cifs', '/mnt/c/Users/ETSK/Desktop/brute/cifs_cc', 1)

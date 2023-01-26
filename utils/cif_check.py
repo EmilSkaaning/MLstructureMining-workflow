@@ -47,10 +47,17 @@ def remove_corrupt_cifs(file: str, directory: str) -> None:
         if max_val==0:
             os.remove(directory + '/' + file)
             return 1
-        g0 /= max_val
+        idx = np.argmax(g0)
+        if r0[idx] < 0.8:
+            print(f'{file} removed, largest peak below 0.8 Å')
+            os.remove(directory + '/' + file)
+            return 1
+
+        #g0 /= max_val
+        return 0
     except Exception as e:
         os.remove(directory + '/' + file)
         return 1
-    return 0
+
 
 
