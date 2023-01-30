@@ -33,7 +33,7 @@ if __name__ == '__main__':
         #'C:/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-12-08_11-02-03-942484'
         '/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/read_lib/cifs_p_t_metals',#cifs_p_t_metals',
         project_name='/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/read_lib/structure_finder_2023-01-25_11-40-09-608910',
-        n_cpu=8,
+        n_cpu=10,
         pcc_th=.95,
         n_simulations=200,
         n_merged_files=999_999
