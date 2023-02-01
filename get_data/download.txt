@@ -1,0 +1,4 @@
+svn co svn://www.crystallography.net/cod
+
+and the following commands to update it:
+svn update

@@ -24,7 +24,7 @@ def return_files(directory: str) -> list:
 
 
 def load_csv(file_path: str, drop_list: list = None) -> pd.DataFrame:
-    df = pd.read_csv(file_path, index_col=0, nrows=0)
+    df = pd.read_csv(file_path, index_col=0, nrows=1)
     df = df.drop(drop_list, axis=1)
     try:
         df = df.drop(['Label'], axis=1)
@@ -32,6 +32,7 @@ def load_csv(file_path: str, drop_list: list = None) -> pd.DataFrame:
         pass
     df = df.values
     df = np.array(df[0], dtype=np.float)
+
     return df
 
 

@@ -18,7 +18,8 @@ def main(stru_directory: str, project_name: str='', n_cpu: int=1, pcc_th: float=
     #main_cif_check(cif_dir, n_cpu)
     cif_dir = f"{project_name}/CIFs_clean"
     data_dir = main_pdf_simulatior(cif_dir, n_cpu, n_simulations)
-    #generate_structure_catalog(data_dir, pcc_th, n_cpu)  # todo: check for dublicate ids in Similar
+    #data_dir = f'{cif_dir}_data'
+    generate_structure_catalog(data_dir, pcc_th, n_cpu)  # todo: check for dublicate ids in Similar
     #main_split_data(project_name, n_merged_files, n_cpu)  # todo: updated via 'structure_catalog_merged'
     return project_name
 
@@ -31,7 +32,7 @@ if __name__ == '__main__':
         #'/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/cif_small',
         #project_name='/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-12-20_08-15-44-512547',
         #'C:/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-12-08_11-02-03-942484'
-        '/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/read_lib/cifs_p_t_metals',#cifs_p_t_metals',
+        '/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/read_lib/test_cifs',#cifs_p_t_metals'
         project_name='/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/read_lib/structure_finder_2023-01-25_11-40-09-608910',
         n_cpu=10,
         pcc_th=.95,
@@ -39,4 +40,4 @@ if __name__ == '__main__':
         n_merged_files=999_999
     )
 
-    main_train(project)
+    #main_train(project)
