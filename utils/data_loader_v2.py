@@ -33,18 +33,16 @@ class Iterator(xgboost.DataIter):
         # input_data is a function passed in by XGBoost who has the exact same signature of
         # ``DMatrix``
         #X, y = load_svmlight_file(self._file_paths[self._it])
-        df = pd.read_csv(os.path.join(self._directory, self._labels_n_files[self._it]), index_col=0)
+        df = pd.read_csv(os.path.join(self._directory, self._labels_n_files[self._it][0]), index_col=0)
+        df['Label'] = self._labels_n_files[self._it][1]
 
-        unique_files = len(df.filename.unique())
-        n_pdf = int(len(df) / unique_files)
-        #print(f'{unique_files} files with {n_pdf} PDFs')
         for d in self.drop_list:
             try:
                 df = df.drop([d], axis=1)
             except:
                 pass
 
-        df = self.split_ratios(df, n_pdf, unique_files)
+        df = self.split_ratios(df)
         y = df.Label.to_numpy()
         X = df.drop(['Label'], axis=1).to_numpy(dtype=np.float)
 
@@ -57,29 +55,17 @@ class Iterator(xgboost.DataIter):
         """Reset the iterator to its beginning"""
         self._it = 0
 
-    def get_index_to_keep(self, l_idx, u_f, n_pdf):
-        ph = []
-        for i in range(u_f):
-            ph.append(list(l_idx+(i*n_pdf)))
-
-        return [item for sublist in ph for item in sublist]
-
-    def split_ratios(self, df, n_pdf, u_f):
+    def split_ratios(self, df):
+        n_pdf = len(df)
         trn_len = math.ceil(n_pdf * .8)
         vld_len = math.ceil((n_pdf - trn_len) / 2)
 
         if self._mode=='trn':
-            trn_idx = np.array(range(trn_len))
-            trn_idx = self.get_index_to_keep(trn_idx, u_f, n_pdf)
-            return df.iloc[trn_idx]#.to_numpy(dtype=np.float)
+            return df.iloc[:trn_len]#.to_numpy(dtype=np.float)
         elif self._mode=='vld':
-            vld_idx = np.array(range(trn_len, trn_len + vld_len))
-            vld_idx = self.get_index_to_keep(vld_idx, u_f, n_pdf)
-            return df.iloc[vld_idx]#.to_numpy(dtype=np.float)
+            return df.iloc[trn_len:trn_len+vld_len]#.to_numpy(dtype=np.float)
         elif self._mode=='tst':
-            tst_idx = np.array(range(trn_len + vld_len, n_pdf))
-            tst_idx = self.get_index_to_keep(tst_idx, u_f, n_pdf)
-            return df.iloc[tst_idx]#.to_numpy(dtype=np.float)
+            return df.iloc[trn_len+vld_len:]#.to_numpy(dtype=np.float)
         else:
             raise('error')
             sys.exit()
@@ -95,10 +81,31 @@ def save_label(data, direcorty, project_name):
     df.to_csv(os.path.join(direcorty, project_name, 'labels.csv'))
     return None
 
-def get_data_splits_from_clean_data(direcorty: str, project_name: str):
+def get_labels(d, d_dir, do_pcc):
+    files = sorted(os.listdir(d_dir))
+    files_w_labels = []
+    if do_pcc:
+        pcc_df = pd.read_csv(f'{d}/structure_catalog_merged.csv', index_col=0)
+        for i, f in enumerate(tqdm(files)):
+            for idx, row in pcc_df.iterrows():
+                if row.Label == f or f in row.Similar:
+                    files_w_labels.append((f, idx))
+                    break
+                else:
+                    continue
+        n_class = len(pcc_df)
+    else:
+        for i, f in enumerate(tqdm(files)):
+            files_w_labels.append((f, i)),
+        n_class = len(files_w_labels)
+    return files_w_labels, n_class
+
+def get_data_splits_from_clean_data(direcorty: str, project_name: str, pcc: bool=True):
     data_dir = os.path.join(direcorty, 'CIFs_clean_data')
-    files_w_labels = sorted(os.listdir(data_dir))
-    f_ph, label_ph  = [], 0
+    files_w_labels, n_class = get_labels(direcorty, data_dir, pcc)
+    save_label(files_w_labels, direcorty, project_name)
+
+    """f_ph, label_ph  = [], 0
     print('Checking data:')
     pbar = tqdm(total=len(files_w_labels))
     for i, f in enumerate(files_w_labels):
@@ -118,14 +125,12 @@ def get_data_splits_from_clean_data(direcorty: str, project_name: str):
     pbar.close()
 
     print(f'Could not load: {len(files_w_labels)-len(f_ph)} of {len(files_w_labels)} files')
-    files_w_labels = f_ph
-    sys.exit()
+    files_w_labels = f_ph"""
     print('\nLoading training data')
     trn_xy = get_dmtraix(data_dir, project_name, files_w_labels, 'trn')
     print('\nLoading validation data')
     vld_xy = get_dmtraix(data_dir, project_name, files_w_labels, 'vld')
     print('\nLoading testing data')
     tst_xy = get_dmtraix(data_dir, project_name, files_w_labels, 'tst')
-
     eval_set = [(trn_xy, 'train'), (vld_xy, 'validation')]
-    return trn_xy, vld_xy, tst_xy, eval_set, label_ph
+    return trn_xy, vld_xy, tst_xy, eval_set, n_class
