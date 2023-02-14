@@ -172,8 +172,6 @@ def get_structures(direct: str, savedir: str, split: int):
 
 
 def main_pdf_simulatior(stru_path: str, n_cpu: int = 1, n_simulations: int=10) -> str:
-
-
     savedir = f'{stru_path}_data'
     return_files(savedir)
     sim_range_dict = {

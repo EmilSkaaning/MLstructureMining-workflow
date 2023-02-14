@@ -94,7 +94,7 @@ def main_train(directory: str, n_cpu: int=1) -> None:
 
 
 if __name__ == '__main__':
-    main_train('/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-12-20_08-15-44-512547', n_cpu=n_cpu)
+    main_train('/mnt/e/XGBOOST_BIG_BOI/read_lib/structure_finder_2023-01-25_11-40-09-608910', n_cpu=32)
 
     # main_train('/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/structure_finder_2022-10-26_11-00-04-343816_1000_stru_20_pdfs')
 

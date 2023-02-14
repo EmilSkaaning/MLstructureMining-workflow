@@ -119,7 +119,7 @@ def get_data_splits_from_clean_data(direcorty: str, project_name: str):
 
     print(f'Could not load: {len(files_w_labels)-len(f_ph)} of {len(files_w_labels)} files')
     files_w_labels = f_ph
-
+    sys.exit()
     print('\nLoading training data')
     trn_xy = get_dmtraix(data_dir, project_name, files_w_labels, 'trn')
     print('\nLoading validation data')
