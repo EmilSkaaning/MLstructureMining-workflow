@@ -8,70 +8,6 @@ from utils.tools import load_csv
 from functools import partial
 
 
-
-def reduce_df(directory: str):
-    print('Reduce DataFrame')
-    df = pd.read_csv(directory, index_col=0)
-
-    removed, df_idx = [], 0
-    pbar = tqdm(total=len(df))
-    cleaned_df = pd.DataFrame({'Label': [], 'Similar': []})
-
-    for ni_row, (idx, irow) in enumerate(df.iterrows()):
-        #print(f'\n{ni_row}, {idx}, {irow.Label}')
-        simulari, label = irow.Similar, irow.Label
-        if label in removed:
-            pbar.update()
-            continue
-        if not isinstance(simulari, str):
-            # pbar.update()
-            # print({'Label': label, 'Similar': simulari})
-            cleaned_df = cleaned_df.append({'Label': label, 'Similar': simulari},
-                                           ignore_index=True)
-            continue
-
-        simulari = simulari.split(', ')
-        simulari.append(label)
-        simulari = sorted(simulari)
-        sim_old = []
-
-        while simulari != sim_old:
-            sim_old = simulari.copy()
-            new_df = df.loc[df['Label'].isin(simulari)]
-
-            new_label = new_df.Label.values
-            new_similar = new_df.Similar.values
-
-            new_similar = [val.split(', ') for val in new_similar if isinstance(val, str)]
-            # print(new_similar)
-            new_similar = [item for sublist in new_similar for item in sublist]
-            # print(new_label, new_similar)
-            simulari = [*new_label, *new_similar]
-
-            # print(simulari)
-            simulari = sorted(list(set(simulari)))
-            # print(simulari)
-            # print(simulari!= sim_old)
-
-        new_idx = df.loc[df['Label'].isin(simulari)].index.values
-        # print(new_idx[0], simulari[1:])
-        df = df.drop(new_idx[1:])
-        # df.iloc[new_idx[0]]['Similar'] = simulari[1:]
-        removed = [*removed, *simulari[1:]]
-        # print(simulari)
-        # print(df.head())
-
-        # df2 = pd.DataFrame(simulari[0], simulari[1:], columns=['Label', 'Similar'], index=[df_idx])
-        cleaned_df = cleaned_df.append({'Label': simulari[0], 'Similar': ', '.join(simulari[1:])}, ignore_index=True)
-
-        pbar.update()
-    pbar.close()
-
-    cleaned_df = cleaned_df.sort_values('Label', ascending=True)
-    cleaned_df = cleaned_df.reset_index(drop=True)
-    cleaned_df.to_csv(directory[:-4] + '_merged.csv')
-    return None
-
 def get_data(directory: str, n_cpu: int):
     drop_list = [
         'filename', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'Uiso', 'Psize', 'rmin', 'rmax', 'rstep','qmin', 'qmax', 'qdamp', 'delta2'
@@ -130,12 +66,105 @@ def pool_pears(data, f_names, directory, pcc_th, n_cpu):
         pbar.update()
     pbar.close()
 
-    print('DataFrame')
     df = pd.DataFrame({'Label': f_names})
     df['Similar'] = compare_dict.values()
     df.to_csv(directory)
     return None
 
+
+def replace_if_contains(df, column_name, value, replacement):
+    df[column_name] = df[column_name].apply(lambda x: replacement if value in x else x)
+    return df
+
+
+def deduplicate_df(df):
+    deduplicated_df = df.copy()
+    deduplicated_df['Similar'] = deduplicated_df['Similar'].str.split(', ')
+    deduplicated_df = deduplicated_df.explode('Similar')
+    deduplicated_df = deduplicated_df.drop_duplicates(subset=['Label', 'Similar'], keep='first')
+    #deduplicated_df = deduplicated_df.fillna('')
+    for idx, row in deduplicated_df.iterrows():
+        #print(row.Label, row.Similar)
+        if pd.isna(row.Similar):
+            continue
+        deduplicated_df = replace_if_contains(deduplicated_df, 'Label', row.Similar, row.Label)
+        #print(deduplicated_df.head(50))
+    deduplicated_df = clean_df(deduplicated_df)
+
+    return deduplicated_df
+
+
+def clean_df(df):
+    df = df.sort_values(by='Label')
+    df = df.drop_duplicates(ignore_index=True)
+    df = df.reset_index(drop=True)
+    return df
+
+def remove_similar_dubs(df):
+    dub_vals = df['Similar'][df['Similar'].duplicated()].tolist()
+    dub_vals = [v for v in dub_vals if isinstance(v, str)==True]
+
+    for val in dub_vals:
+
+        first, new_file = True, 'xxxxx'
+        for idx, row in df.iterrows():
+            if row.Similar == val and first == True:
+                first = False
+                new_file = row.Label
+            elif row.Similar == val:
+                count = (df['Label'] == df.iloc[idx]['Label']).sum()
+                if count == 1:
+                    new_row = pd.DataFrame({
+                        'Label': [new_file],
+                        'Similar': [df.iloc[idx]['Label']]
+                    })
+                    df = df.append(new_row, ignore_index=True)
+                df.iloc[idx]['Label'] = new_file
+
+    df = clean_df(df)
+    return df
+
+
+def check_unique(df):
+    unique_col_A = list(df['Label'].unique())
+    df = df.dropna()
+    unique_col_A += list(df['Similar'].unique())
+    total = sorted(list(set(unique_col_A)))
+
+    return total
+
+
+def remove_empty_dublicates(df):
+    counts = df['Label'].value_counts()
+    index = list(counts.index)
+    names = [index[i] for i, c in enumerate(counts) if c != 1]
+    delete_idx = []
+    for idx, row in df.iterrows():
+        if row.Label in names and pd.isna(row.Similar):
+            delete_idx.append(idx)
+
+    df = df.drop(delete_idx)
+    df = clean_df(df)
+    return df
+
+def clean_pcc(df):
+    df = deduplicate_df(df)
+
+    print('\nReducing PCC file')
+    for i in tqdm(range(99)):
+        ph = df.copy()
+        df = remove_similar_dubs(df)
+        df = remove_empty_dublicates(df)
+
+        if df.equals(ph):
+            break
+
+    tot = check_unique(df)
+    print(len(tot))
+    df = df.groupby('Label')['Similar'].apply(list)
+    df = df.reset_index()
+
+    return df
 
 
 def generate_structure_catalog(directory: str, pcc_th: float, n_cpu: int = 2):
@@ -152,8 +181,10 @@ def generate_structure_catalog(directory: str, pcc_th: float, n_cpu: int = 2):
         pcc_th,
         n_cpu
     )
+    df = pd.read_csv(os.path.join(head, 'structure_catalog.csv'), index_col=0)
 
-    #reduce_df(os.path.join(head, 'structure_catalog.csv'))
+    df = clean_pcc(df)
+    df.to_csv(os.path.join(head, 'structure_catalog_merged.csv'))
 
     total_time = time.time() - start
     print('\nDone, took {:6.1f} h.'.format(total_time / 3600))

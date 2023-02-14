@@ -7,18 +7,19 @@ from utils.compare_data import generate_structure_catalog
 from utils.data_split import main_split_data
 from train_model.train_model import main_train
 
-def main(stru_directory: str, project_name: str='', n_cpu: int=1, pcc_th: float=0.9, n_simulations: int=10, n_merged_files: int=1) -> None:
+def main(stru_directory: str, project_name: str='', n_cpu: int=1, pcc_th: float=0.9, n_simulations: int=10) -> None:
     if project_name == '':
         head, tail = os.path.split(stru_directory)
         ct = str(datetime.datetime.now()).replace(' ', '_').replace(':', '-').replace('.', '-')
         project_name = f'{head}/structure_finder_{ct}'
         os.mkdir(project_name)
 
-    #cif_dir = convert_cif(stru_directory, project_name, n_cpu)
-    #main_cif_check(cif_dir, n_cpu)
-    cif_dir = f"{project_name}/CIFs_clean"
+    cif_dir = convert_cif(stru_directory, project_name, n_cpu)
+    main_cif_check(cif_dir, n_cpu)
+    #cif_dir = f"{project_name}/CIFs_clean"
     data_dir = main_pdf_simulatior(cif_dir, n_cpu, n_simulations)
-    #generate_structure_catalog(data_dir, pcc_th, n_cpu)  # todo: check for dublicate ids in Similar
+    #data_dir = f'{cif_dir}_data'
+    generate_structure_catalog(data_dir, pcc_th, n_cpu)  # todo: check for dublicate ids in Similar
     #main_split_data(project_name, n_merged_files, n_cpu)  # todo: updated via 'structure_catalog_merged'
     return project_name
 
@@ -31,12 +32,11 @@ if __name__ == '__main__':
         #'/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/cif_small',
         #project_name='/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-12-20_08-15-44-512547',
         #'C:/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-12-08_11-02-03-942484'
-        '/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/read_lib/cifs_p_t_metals',#cifs_p_t_metals',
-        project_name='/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/read_lib/structure_finder_2023-01-25_11-40-09-608910',
-        n_cpu=10,
-        pcc_th=.95,
-        n_simulations=200,
-        n_merged_files=999_999
+        '/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/read_lib/test_cifs',#cifs_p_t_metals'
+        #project_name='/mnt/e/XGBOOST_BIG_BOI/read_lib/structure_finder_2023-01-25_11-40-09-608910',
+        n_cpu=15,
+        pcc_th=.5,
+        n_simulations=10,
     )
 
-    main_train(project)
+    #main_train(project)

@@ -149,26 +149,29 @@ class simPDFs:
 
 
 
-def get_structures(direct, savedir, split):
+def get_structures(direct: str, savedir: str, split: int):
+    print('\nChecking existing files')
     files = sorted(os.listdir(direct))
 
     pdfs = os.listdir(savedir)
-    exists = []
-    for file in pdfs:
+    wrong, exist = [], []
+    for file in tqdm(pdfs):
         df = pd.read_csv(os.path.join(savedir, file))
 
         if len(df) != split:
+            wrong.append(file)
             os.remove(os.path.join(savedir, file))
         else:
-            exists.append(file)
+            exist.append(file)
 
-    files = [file for file in files if file.rsplit('.')[0] + '.csv' not in pdfs]
+    if len(wrong) != 0:
+        print(f'{len(wrong)} files will be deleted')
+
+    files = [f for f in files if f.rsplit('.')[0] + '.csv' not in pdfs]
     return files
 
 
 def main_pdf_simulatior(stru_path: str, n_cpu: int = 1, n_simulations: int=10) -> str:
-    print('\nSimulating PDFs')
-
     savedir = f'{stru_path}_data'
     return_files(savedir)
     sim_range_dict = {
@@ -191,8 +194,9 @@ def main_pdf_simulatior(stru_path: str, n_cpu: int = 1, n_simulations: int=10) -
     else:
         os.mkdir(savedir)
 
-    files = get_structures(stru_path, savedir, sim_range_dict)
+    files = get_structures(stru_path, savedir, n_simulations)
 
+    print('\nSimulating PDFs')
     start_time = time.time()
     pbar = tqdm(total=len(files))
     with multiprocessing.Pool(processes=n_cpu) as pool:

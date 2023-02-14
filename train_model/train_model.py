@@ -24,11 +24,11 @@ def main_train(directory: str, n_cpu: int=1) -> None:
             "verbosity": 1,
             "nthread": n_cpu,
             "subsample": 1,  # default: 1
-            "max_depth": 10_000,  # default: 6
+            "max_depth": 3,#10_000,  # default: 6
             "tree_method": "hist",  # default: "auto",
             "max_bin": 256,  # default: 256
         },
-        "early_stopping_rounds": 25,
+        "early_stopping_rounds": 1,
         'num_boost_round': 999_999_999
     }
     eval_dict = {}
@@ -94,7 +94,7 @@ def main_train(directory: str, n_cpu: int=1) -> None:
 
 
 if __name__ == '__main__':
-    main_train('/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-12-20_08-15-44-512547', n_cpu=n_cpu)
+    main_train('/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/read_lib/structure_finder_2023-02-14_14-50-38-809961', n_cpu=8)
 
     # main_train('/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/structure_finder_2022-10-26_11-00-04-343816_1000_stru_20_pdfs')
 
