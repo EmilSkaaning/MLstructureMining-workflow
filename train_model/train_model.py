@@ -1,7 +1,7 @@
 import os, sys, xgboost, shutil, datetime, yaml, time
 sys.path.append("..")
 #from utils.data_loader import get_data_splits
-from utils.data_loader_v2 import get_data_splits_from_clean_data
+from utils.data_loader_in_mem import get_data_splits_from_clean_data
 from utils.tools import accuracy_top_x
 from utils.plotting import plot_loss_curve
 import pandas as pd
@@ -24,7 +24,7 @@ def main_train(directory: str, n_cpu: int=1) -> None:
             "verbosity": 1,
             "nthread": n_cpu,
             "subsample": 1,  # default: 1
-            "max_depth": 3,#10_000,  # default: 6
+            "max_depth": 10_000,  # default: 6
             "tree_method": "hist",  # default: "auto",
             "max_bin": 256,  # default: 256
         },
@@ -94,7 +94,7 @@ def main_train(directory: str, n_cpu: int=1) -> None:
 
 
 if __name__ == '__main__':
-    main_train('/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/read_lib/structure_finder_2023-02-14_14-50-38-809961', n_cpu=8)
+    main_train('/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/read_lib/structure_finder_test_run', n_cpu=8)
 
     # main_train('/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/structure_finder_2022-10-26_11-00-04-343816_1000_stru_20_pdfs')
 
