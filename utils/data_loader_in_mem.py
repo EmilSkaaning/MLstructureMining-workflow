@@ -9,11 +9,6 @@ from dataclasses import dataclass, field
 
 
 
-
-
-
-
-
 class Iterator(xgboost.DataIter):
     def __init__(self, directory: str, project_name: str, labels_n_files: str, mode: str):
         self._directory = directory
@@ -193,30 +188,8 @@ def get_data_splits_from_clean_data(direcorty: str, project_name: str, pcc: bool
     vld_xy = data_obj('vld')
     print('\nLoading testing data')
     tst_xy = data_obj('tst')
-    #sys.exit()
-
-    """f_ph, label_ph  = [], 0
-    print('Checking data:')
-    pbar = tqdm(total=len(files_w_labels))
-    for i, f in enumerate(files_w_labels):
-        try:
-            df = pd.read_csv(os.path.join(data_dir, f), index_col=0)
-            df.Label = -1
-            f_names = df.filename.unique()
-            for f_name in f_names:
-                df.loc[df["filename"] == f_name, "Label"] = label_ph
-                label_ph += 1
-            df.to_csv(os.path.join(data_dir, f))
-            f_ph.append(f)
-        except:
-            print(f'Could not load: {f}')
-            pass
-        pbar.update()
-    pbar.close()
-
-    print(f'Could not load: {len(files_w_labels)-len(f_ph)} of {len(files_w_labels)} files')
-    files_w_labels = f_ph"""
 
     eval_set = [(trn_xy, 'train'), (vld_xy, 'validation')]
+
     return trn_xy, vld_xy, tst_xy, eval_set, n_class
 
