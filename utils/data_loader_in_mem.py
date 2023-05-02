@@ -9,11 +9,6 @@ from dataclasses import dataclass, field
 
 
 
-
-
-
-
-
 class Iterator(xgboost.DataIter):
     def __init__(self, directory: str, project_name: str, labels_n_files: str, mode: str):
         self._directory = directory
@@ -218,5 +213,6 @@ def get_data_splits_from_clean_data(direcorty: str, project_name: str, pcc: bool
     files_w_labels = f_ph"""
 
     eval_set = [(trn_xy, 'train'), (vld_xy, 'validation')]
+
     return trn_xy, vld_xy, tst_xy, eval_set, n_class
 

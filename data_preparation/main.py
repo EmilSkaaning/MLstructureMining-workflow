@@ -27,14 +27,9 @@ def main(stru_directory: str, project_name: str='', n_cpu: int=1, pcc_th: float=
 
 if __name__ == '__main__':
     project = main(
-        #'/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/test_cif',
-        #'/mnt/c/Users/WindowsVirus/Documents/my_projects/XGBoost/small_test_cif',
-        #'/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/cif_small',
-        #project_name='/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-12-20_08-15-44-512547',
-        #'C:/Users/ETSK/Desktop/XGBOOST_BIG_BOI/test_case/structure_finder_2022-12-08_11-02-03-942484'
-        '/mnt/c/Users/ETSK/Desktop/XGBOOST_BIG_BOI/read_lib/test_cifs',#cifs_p_t_metals'
-        #project_name='/mnt/e/XGBOOST_BIG_BOI/read_lib/structure_finder_2023-01-25_11-40-09-608910',
-        n_cpu=15,
+        '/mnt/e/Work/PhD/Articles/CIF_finder/development/cifs_test',
+
+        n_cpu=8,
         pcc_th=.5,
         n_simulations=10,
     )

@@ -29,12 +29,13 @@ if __name__=='__main__':
               'F Cl Br I At ' \
               'He Ne Ar Kr Xe Rn ' \
               'Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og ' \
-              'La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu ' \
-              'Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr ' \
               ''.split(' ')
 
-    include = []  # ['O', 'S', 'H'] or []
-    save_dir = 'include_None'
+    # 'La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu ' \
+    # 'Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr ' \
+
+    include = ['O', 'S', 'H'] or []
+    save_dir = 'include_None_test_test'
     db_path = '/mnt/e/cod/cif'
 
     if not os.path.isdir(save_dir):
