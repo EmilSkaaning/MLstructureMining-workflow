@@ -5,7 +5,6 @@ import time, multiprocessing
 from scipy.stats import pearsonr
 from tqdm import tqdm
 from utils.tools import load_csv
-from functools import partial
 
 
 def get_data(directory: str, n_cpu: int):
