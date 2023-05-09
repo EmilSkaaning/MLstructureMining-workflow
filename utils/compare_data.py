@@ -150,7 +150,7 @@ def clean_pcc(df):
     df = deduplicate_df(df)
 
     print('\nReducing PCC file')
-    for i in tqdm(range(99)):
+    for i in tqdm(range(99_999_999)):
         ph = df.copy()
         df = remove_similar_dubs(df)
         df = remove_empty_dublicates(df)

@@ -94,4 +94,4 @@ def main_train(directory: str, n_cpu: int=1) -> None:
 
 
 if __name__ == '__main__':
-    main_train('/mnt/e/Work/PhD/Articles/CIF_finder/development/structure_finder_2023-05-02_12-45-04-453036', n_cpu=8)
+    main_train('/mnt/e/Work/PhD/Articles/CIF_finder/development/structure_finder_2023-05-09_13-40-45-619603', n_cpu=8)
