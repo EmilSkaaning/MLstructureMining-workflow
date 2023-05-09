@@ -159,10 +159,9 @@ def clean_pcc(df):
             break
 
     tot = check_unique(df)
-    print(len(tot))
     df = df.groupby('Label')['Similar'].apply(list)
     df = df.reset_index()
-
+    print(f"Unique CIFs: {len(tot)} and number of classes after PCC: {len(df)}")
     return df
 
 
