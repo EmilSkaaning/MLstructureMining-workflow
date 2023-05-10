@@ -4,9 +4,7 @@ import time
 import datetime
 import yaml
 import xgboost
-import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.metrics import log_loss, accuracy_score
 
 sys.path.append("..")

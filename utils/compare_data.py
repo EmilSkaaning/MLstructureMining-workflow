@@ -135,11 +135,12 @@ def high_correlations(corr_matrix: np.ndarray, threshold: float):
     n = corr_matrix.shape[0]
     high_corr = {i: None for i in range(n)}  # Start with all None values
 
+    print('Finding high correlations:')
     # Get the indices where correlation is above the threshold
     indices = np.where(corr_matrix > threshold)
 
     # For each index where correlation is above the threshold, assign the column index to the row index in the dictionary
-    for row_index, col_index in zip(*indices):
+    for row_index, col_index in tqdm(zip(*indices), total=len(indices[0])):
         if high_corr[row_index] is None:
             high_corr[row_index] = [col_index]
         else:
