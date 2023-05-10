@@ -7,7 +7,27 @@ import argparse
 from scipy.stats import pearsonr
 from joblib import Parallel, delayed
 import time
+import sys
+from multiprocessing import Pool, Manager
+
+sys.path.append("..")
 from utils.tools import load_csv
+
+
+def load_csv_files(args):
+    """
+    Load multiple CSV files.
+
+    Parameters:
+    args (tuple): A tuple containing a list of filepaths for the CSV files to load and the shared progress list.
+
+    Returns:
+    tuple: A tuple containing a list of numpy arrays for each file and the batch number.
+    """
+    filepaths, progress_list, batch_number = args
+    arrays = [load_csv(filepath) for filepath in filepaths]
+    progress_list.append(len(filepaths))  # increment the progress
+    return arrays, batch_number
 
 
 def get_data(directory: str, n_cpu: int):
@@ -19,15 +39,36 @@ def get_data(directory: str, n_cpu: int):
     n_cpu (int): The number of CPU cores to use for parallel loading of files.
 
     Returns:
-    np.ndarray: An array of dataframes loaded from the CSV files.
+    np.ndarray: An array of arrays loaded from the CSV files.
     list: A list of filenames.
     """
     files = os.listdir(directory)
-    dir_file = [os.path.join(directory, f) for f in files]
+    dir_files = [os.path.join(directory, f) for f in files]
+
+    # Divide the files into n_cpu batches
+    file_batches = np.array_split(dir_files, n_cpu)
+
+    # Create a list in server process memory
+    manager = Manager()
+    progress_list = manager.list()
+
     print('\nLoading data:')
-    with concurrent.futures.ThreadPoolExecutor(max_workers=n_cpu) as executor:
-        dataframes = list(tqdm(executor.map(load_csv, dir_file), total=len(dir_file)))
-    return np.asarray(dataframes), files
+    with Pool(n_cpu) as p:
+        args = [(file_batch, progress_list, i) for i, file_batch in enumerate(file_batches)]
+        array_batches_and_batch_numbers = list(
+            tqdm(
+                p.imap_unordered(load_csv_files, args),
+                total=n_cpu,
+                desc='Loading CSV files'
+            )
+        )
+
+    # Sort the array batches by batch number and then concatenate
+    array_batches_and_batch_numbers.sort(key=lambda x: x[1])  # sort by batch number
+    array_batches = [arrays for arrays, _ in array_batches_and_batch_numbers]
+    data = np.concatenate(array_batches)
+
+    return data, files
 
 
 def calculate_pearson(i: int, j: int, data: np.array) -> float:
@@ -56,15 +97,20 @@ def correlation_matrix(data: np.array, n_cpu: int) -> np.array:
     Returns:
     np.ndarray: The correlation coefficient matrix.
     """
+    print(f'\nCalculating PCC:')
     n = data.shape[0]
     corr_matrix = np.zeros((n, n))
 
     # Get the indices of the upper half of the matrix
     upper_indices = np.triu_indices(n, k=1)
 
+    # Prepare iterable for tqdm
+    iterable = zip(*upper_indices)
+    iterable = list(tqdm(iterable, total=n*(n-1)//2, desc='Calculating correlations'))
+
     # Calculate the correlation coefficients in parallel
     correlations = Parallel(n_jobs=n_cpu)(
-        delayed(calculate_pearson)(i, j, data) for i, j in zip(*upper_indices)
+        delayed(calculate_pearson)(i, j, data) for i, j in iterable
     )
 
     # Assign the correlations to the upper half of the matrix
@@ -141,7 +187,7 @@ def reduce_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
     df_copy = df.copy()
     indices_to_drop = []
-    for i in df_copy.index:
+    for i in tqdm(df_copy.index, desc='Reducing dataframe'):
         if df_copy.at[i, 'Y'] is not None:
             new_Y = []
             indices_to_explore = df_copy.at[i, 'Y'].copy()  # copy to avoid changing the list while iterating
@@ -175,7 +221,7 @@ def merge_similar_rows(df: pd.DataFrame) -> pd.DataFrame:
     """
     df_copy = df.copy()
     indices_to_drop = []
-    for i in df_copy.index:
+    for i in tqdm(df_copy.index, desc='Merging similar rows'):
         if df_copy.at[i, 'Y'] is not None:
             for j in range(i+1, len(df_copy)):
                 if df_copy.at[j, 'Y'] is not None:

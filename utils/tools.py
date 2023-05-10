@@ -5,16 +5,6 @@ import pandas as pd
 
 
 def return_files(directory: str) -> list:
-    """
-
-    Parameters
-    ----------
-    directory
-
-    Returns
-    -------
-
-    """
     if os.path.isdir(directory):
         files = os.listdir(directory)
     else:
