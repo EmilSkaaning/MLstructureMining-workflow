@@ -118,6 +118,8 @@ class get_data:
     def __post_init__(self):
         ph = pd.read_csv(os.path.join(self.directory, self.labels_n_files[0][0]), index_col=0)
         ph = self.drop_row(ph)
+        self.max_size = 100
+        ph = ph.head(self.max_size)
         self.pdf_len = len(ph.iloc[0])
         self.n_pdf = len(ph)
         self.trn_len = math.ceil(self.n_pdf * .8)
@@ -161,7 +163,7 @@ class get_data:
         elif mode=='vld':
             return df.iloc[self.trn_len:self.trn_len+self.vld_len]
         elif mode=='tst':
-            return df.iloc[self.trn_len+self.vld_len:]
+            return df.iloc[self.trn_len+self.vld_len:self.max_size]
         else:
             raise('error')
             sys.exit()

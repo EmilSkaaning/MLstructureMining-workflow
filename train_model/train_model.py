@@ -24,7 +24,7 @@ def main_train(directory: str, n_cpu: int=1) -> None:
             "verbosity": 1,
             "nthread": n_cpu,
             "subsample": 1,  # default: 1
-            "max_depth": 10_000,  # default: 6
+            "max_depth": 6,  # default: 6
             "tree_method": "hist",  # default: "auto",
             "max_bin": 256,  # default: 256
         },
@@ -94,4 +94,4 @@ def main_train(directory: str, n_cpu: int=1) -> None:
 
 
 if __name__ == '__main__':
-    main_train('/mnt/e/Work/PhD/Articles/CIF_finder/development/structure_finder_2023-05-02_12-45-04-453036', n_cpu=8)
+    main_train('/mnt/e/Work/PhD/Articles/CIF_finder/development/structure_finder_2023-05-10T10-19-36-001522', n_cpu=8)
