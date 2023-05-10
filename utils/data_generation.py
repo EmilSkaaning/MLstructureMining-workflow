@@ -7,12 +7,29 @@ import pandas as pd
 from diffpy.Structure import loadStructure
 from diffpy.srreal.pdfcalculator import PDFCalculator
 from smt.sampling_methods import LHS
-from utils.tools import return_files
 from tqdm import tqdm
+import argparse
+import sys
+sys.path.append("..")
+from utils.tools import get_files
 
 
-class SimPDFs:
-    def __init__(self, file, cif_dir, save_dir, sim_range, split):
+
+class sim_pdfs:
+    """
+    A class for simulating PDFs based on parameters.
+
+    Args:
+    file (str): The name of the file.
+    cif_dir (str): The directory where CIF files are stored.
+    save_dir (str): The directory where results will be saved.
+    sim_range (dict): A dictionary containing the range of values for simulation parameters.
+    split (int): The number of splits for the Latin Hypercube Sampling.
+
+    Returns:
+    None. This class does not return a value but saves the results in the specified directory.
+    """
+    def __init__(self, file: str, cif_dir: str, save_dir: str, sim_range: dict, split: int):
         self.cif_dir = cif_dir
         self.save_dir = save_dir
         self.init_df(file)
@@ -24,7 +41,7 @@ class SimPDFs:
         self.csv.set_index('filename')
         self.csv.to_csv(os.path.join(self.save_dir, self.filename))
 
-    def init_df(self, file):
+    def init_df(self, file: str) -> None:
         self.filename = f'{file[:-4]}.csv'
         self.sim_para = [
             'filename', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'Uiso', 'Psize', 'rmin', 'rmax', 'rstep', 'qmin', 'qmax', 'qdamp', 'delta2'
@@ -35,7 +52,7 @@ class SimPDFs:
         self.column = np.concatenate((self.sim_para, r), axis=0)
         self.csv = pd.DataFrame(columns=self.column)
 
-    def _starting_parameters(self):
+    def _starting_parameters(self) -> None:
         self.par_dict = {
             'rmin': 0,
             'rmax': 30.1,
@@ -54,7 +71,7 @@ class SimPDFs:
         parameters = sampling(split)
         return parameters
 
-    def gen_pdfs(self, cluster_file, parameter, index):
+    def gen_pdfs(self, cluster_file: str, parameter: dict, index: int) -> None:
         stru = loadStructure(os.path.join(self.cif_dir, cluster_file))
         stru.U11 = stru.U22 = stru.U33 = parameter[4]
         stru.U12 = stru.U13 = stru.U23 = 0
@@ -99,7 +116,7 @@ class SimPDFs:
         return a, b, c, alpha, beta, gamma
 
     @staticmethod
-    def apply_relative_percentage_change(value, change):
+    def apply_relative_percentage_change(value: float, change: float) -> float:
         return (value / 100) * (100 + change)
 
     @staticmethod
@@ -113,7 +130,7 @@ class SimPDFs:
         return a, b, c
 
     @staticmethod
-    def size_damp(x, spdiameter):
+    def size_damp(x: np.ndarray, spdiameter: float) -> np.ndarray:
         tau = x / spdiameter
         ph = 1 - 1.5 * tau + 0.5 * tau ** 3
         ph[np.argmin(ph) + 1:] = 0
@@ -121,28 +138,55 @@ class SimPDFs:
 
 
 def get_structures(directory: str, savedir: str, split: int) -> list:
-    files = sorted(os.listdir(directory))
-    pdfs = os.listdir(savedir)
-    if len(pdfs) == 0:
-        return files
-    wrong, exist = [], []
-    for file in pdfs:
+    """
+    This function checks if there are already simulated data in the folder and if they are having the proper dimensions.
+    If this is not the case then they are deleted.
+
+    Parameters:
+    directory (str): The directory where the original files are located.
+    savedir (str): The directory where the simulated files are saved.
+    split (int): The expected length of the simulated files.
+
+    Returns:
+    list: A list of filenames of files that do not have a corresponding simulated file with the proper dimensions.
+    """
+
+    # Get lists of files in the directory and savedir
+    original_files = sorted(os.listdir(directory))
+    simulated_files = os.listdir(savedir)
+
+    # If there are no simulated files, return all original files
+    if len(simulated_files) == 0:
+        return original_files
+
+    # Initialize lists for wrong and existing files
+    incorrect_files, existing_files = [], []
+
+    # Check each simulated file
+    for file in simulated_files:
         df = pd.read_csv(os.path.join(savedir, file))
+
+        # If the length of the file is not split, add it to the incorrect files list and delete the file
         if len(df) != split:
-            wrong.append(file)
+            incorrect_files.append(file)
             os.remove(os.path.join(savedir, file))
         else:
-            exist.append(file)
+            # If the length is correct, add it to the existing files list
+            existing_files.append(file)
 
-    if len(wrong) != 0:
-        print(f'{len(wrong)} files will be deleted')
+    # If there were incorrect files, print how many were deleted
+    if len(incorrect_files) != 0:
+        print(f'{len(incorrect_files)} file(s) were deleted')
 
-    return [f for f in files if f.rsplit('.')[0] + '.csv' not in pdfs]
+    # Return a list of original files that do not have a corresponding correct simulated file
+    return [file for file in original_files if file.rsplit('.')[0] + '.csv' not in existing_files]
+
 
 
 def simulate_pdfs(stru_path: str, n_cpu: int = 1, n_simulations: int = 10) -> str:
     savedir = f'{stru_path}_data'
-    return_files(savedir)
+    get_files(savedir)
+
     sim_range_dict = {
         'qmin': [0.7, 0.7],
         'qmax': [20, 20],
@@ -155,15 +199,15 @@ def simulate_pdfs(stru_path: str, n_cpu: int = 1, n_simulations: int = 10) -> st
         'c': [-4, 4],
     }
 
-    if not os.path.exists(savedir):
-        os.mkdir(savedir)
+    os.makedirs(savedir, exist_ok=True)
 
     files = get_structures(stru_path, savedir, n_simulations)
 
     print('\nSimulating PDFs')
     start_time = time.time()
+
     with multiprocessing.Pool(processes=n_cpu) as pool:
-        sim_pdfs_partial = partial(SimPDFs, cif_dir=stru_path, save_dir=savedir, sim_range=sim_range_dict,
+        sim_pdfs_partial = partial(sim_pdfs, cif_dir=stru_path, save_dir=savedir, sim_range=sim_range_dict,
                                    split=n_simulations)
         for _ in tqdm(pool.imap_unordered(sim_pdfs_partial, files), total=len(files)):
             pass
@@ -172,4 +216,14 @@ def simulate_pdfs(stru_path: str, n_cpu: int = 1, n_simulations: int = 10) -> st
     print(f'\nDone, took {total_time / 3600:.1f} h.')
     return savedir
 
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Simulate PDFs.')
+    parser.add_argument('stru_path', type=str, help='The directory where the structure files are located.')
+    parser.add_argument('-n', '--n_cpu', type=int, default=1, help='The number of CPUs to use for simulation.')
+    parser.add_argument('-s', '--n_simulations', type=int, default=10, help='The number of simulations to run.')
+
+    args = parser.parse_args()
+
+    simulate_pdfs(args.stru_path, args.n_cpu, args.n_simulations)
 

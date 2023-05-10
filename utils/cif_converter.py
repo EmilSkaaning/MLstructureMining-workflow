@@ -6,11 +6,9 @@ import time
 import argparse
 from functools import partial
 from typing import Optional
-
 from tqdm import tqdm
-
 sys.path.append("..")
-from utils.tools import return_files
+from utils.tools import get_files
 
 CIF_EXTENSION = '.cif'
 DECIMAL_REPLACEMENTS = {
@@ -52,7 +50,7 @@ def convert_cif(r_path: str, w_path: str, n_cpu: Optional[int] = 1) -> str:
     else:
         os.mkdir(w_path)
 
-    files_w = return_files(w_path)
+    files_w = get_files(w_path)
     files = sorted([file for file in files if file.endswith(CIF_EXTENSION)])
 
     print('{} files found'.format(len(files)))

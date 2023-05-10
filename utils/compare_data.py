@@ -1,5 +1,4 @@
 import pandas as pd
-import concurrent.futures
 from tqdm import tqdm
 import numpy as np
 import os
@@ -274,9 +273,6 @@ def check_no_duplicates_and_all_present(df: pd.DataFrame, n_max: int) -> bool:
 
     # If we have checked all values, found no duplications, and all integers are present, return True
     return True
-
-
-
 
 
 def replace_integers_with_strings(df: pd.DataFrame, string_list: list) -> pd.DataFrame:
