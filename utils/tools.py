@@ -23,17 +23,18 @@ def return_files(directory: str) -> list:
     return files
 
 
-def load_csv(file_path: str, drop_list: list = None) -> pd.DataFrame:
+def load_csv(file_path: str) -> pd.DataFrame:
+    drop_list = [
+        'filename', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'Uiso', 'Psize', 'rmin', 'rmax', 'rstep','qmin', 'qmax', 'qdamp', 'delta2'
+    ]
     df = pd.read_csv(file_path, index_col=0, nrows=1)
     df = df.drop(drop_list, axis=1)
     try:
         df = df.drop(['Label'], axis=1)
     except KeyError:
         pass
-    df = df.values
-    df = np.array(df[0], dtype=np.float)
 
-    return df
+    return np.array(df.values[0], dtype=np.float)
 
 
 def accuracy_top_x(true, pred, n):

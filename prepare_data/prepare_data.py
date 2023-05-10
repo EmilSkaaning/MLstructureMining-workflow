@@ -45,9 +45,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script for processing CIF files and simulating PDFs.")
     parser.add_argument('stru_directory', help="Location of CIFs used for simulating PDFs.")
     parser.add_argument('--project_name', default=None, help="Location of where simulated data will be stored. If not defined, a unique timestamp will be used as name.")
-    parser.add_argument('--n_cpu', type=int, default=1, help="Number of CPUs used for multiprocessing.")
-    parser.add_argument('--pcc_th', type=float, default=0.9, help="Threshold for Pearson Correlation Coefficient. CIFs having a PCC value above pcc_th will be seen as the same class during training.")
-    parser.add_argument('--n_simulations', type=int, default=10, help="Number of simulated PDFs per CIF.")
+    parser.add_argument('--n_cpu', type=int, default=8, help="Number of CPUs used for multiprocessing.")
+    parser.add_argument('--pcc_th', type=float, default=0.95, help="Threshold for Pearson Correlation Coefficient. CIFs having a PCC value above pcc_th will be seen as the same class during training.")
+    parser.add_argument('--n_simulations', type=int, default=1, help="Number of simulated PDFs per CIF.")
     args = parser.parse_args()
 
     project = main(
