@@ -118,7 +118,7 @@ class get_data:
     def __post_init__(self):
         ph = pd.read_csv(os.path.join(self.directory, self.labels_n_files[0][0]), index_col=0)
         ph = self.drop_row(ph)
-        self.max_size = 10
+        self.max_size = 100
         ph = ph.head(self.max_size)
         self.pdf_len = len(ph.iloc[0])
         self.n_pdf = len(ph)

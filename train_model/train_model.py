@@ -24,7 +24,7 @@ def main_train(directory: str, n_cpu: int=1) -> None:
             "verbosity": 1,
             "nthread": n_cpu,
             "subsample": 1,  # default: 1
-            "max_depth": 10_000,  # default: 6
+            "max_depth": 6,  # default: 6
             "tree_method": "hist",  # default: "auto",
             "max_bin": 256,  # default: 256
         },
