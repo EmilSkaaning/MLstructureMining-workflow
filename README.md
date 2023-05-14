@@ -24,11 +24,10 @@ conda install diffpy-cmi
 
 ## Code Structure
 
-## Download CIFs from COD 
-
-## Generate data
-
-## Train model
+1) [Get CIFs](./get_structures)
+2) [Prepare data](./prepare_data)
+3) [Train model](./train_model)
+4) [Utilities](./utils) 
 
 # Cite
 If you use our code or our results, please consider citing our paper. Thanks in advance!
