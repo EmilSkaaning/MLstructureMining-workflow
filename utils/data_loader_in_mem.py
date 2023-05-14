@@ -1,195 +1,219 @@
 import os, math
-import sys
-from typing import List, Callable
 import xgboost
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from dataclasses import dataclass, field
+from typing import Tuple
 
 
+def save_labels(data: pd.DataFrame, directory: str, project_name: str) -> None:
+    """
+    Save labels as a csv file.
 
-class Iterator(xgboost.DataIter):
-    def __init__(self, directory: str, project_name: str, labels_n_files: str, mode: str):
-        self._directory = directory
-        self._labels_n_files = labels_n_files
-        self._mode = mode
-        self._it = 0
-        self.drop_list = [
-            'filename', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'Uiso', 'Psize', 'rmin', 'rmax',
-            'rstep','qmin', 'qmax', 'qdamp', 'delta2'
-        ]
+    Parameters:
+    data (pd.DataFrame): The data to save.
+    directory (str): The directory to save the file in.
+    project_name (str): The name of the project.
 
-        # XGBoost will generate some cache files under current directory with the prefix
-        # "cache"
-        super().__init__(cache_prefix=os.path.join(project_name, "cache"))
-
-    def next(self, input_data: Callable):
-        """Advance the iterator by 1 step and pass the data to XGBoost.  This function is
-        called by XGBoost during the construction of ``DMatrix``
-
-        """
-        if self._it == len(self._labels_n_files):
-            # return 0 to let XGBoost know this is the end of iteration
-            return 0
-
-        # input_data is a function passed in by XGBoost who has the exact same signature of
-        # ``DMatrix``
-        #X, y = load_svmlight_file(self._file_paths[self._it])
-        df = pd.read_csv(os.path.join(self._directory, self._labels_n_files[self._it][0]), index_col=0)
-        df['Label'] = self._labels_n_files[self._it][1]
-
-        for d in self.drop_list:
-            try:
-                df = df.drop([d], axis=1)
-            except:
-                pass
-
-        df = self.split_ratios(df)
-        y = df.Label.to_numpy()
-        X = df.drop(['Label'], axis=1).to_numpy(dtype=np.float)
-
-        input_data(X, label=y)
-        self._it += 1
-        # Return 1 to let XGBoost know we haven't seen all the files yet.
-        return 1
-
-    def reset(self):
-        """Reset the iterator to its beginning"""
-        self._it = 0
-
-    def split_ratios(self, df):
-        n_pdf = len(df)
-        trn_len = math.ceil(n_pdf * .8)
-        vld_len = math.ceil((n_pdf - trn_len) / 2)
-
-        if self._mode=='trn':
-            return df.iloc[:trn_len]#.to_numpy(dtype=np.float)
-        elif self._mode=='vld':
-            return df.iloc[trn_len:trn_len+vld_len]#.to_numpy(dtype=np.float)
-        elif self._mode=='tst':
-            return df.iloc[trn_len+vld_len:]#.to_numpy(dtype=np.float)
-        else:
-            raise('error')
-            sys.exit()
-
-
-def get_dmtraix(directory: str, project_name: str, labels_n_files: str, mode: str):
-    it = Iterator(directory, project_name, labels_n_files, mode)
-    Xy = xgboost.DMatrix(it)
-    return Xy
-
-def save_label(data, direcorty, project_name):
+    Returns:
+    None
+    """
     df = pd.DataFrame(data)
-    df.to_csv(os.path.join(direcorty, project_name, 'labels.csv'))
-    return None
+    df.to_csv(os.path.join(directory, project_name, 'labels.csv'))
 
-def get_labels(d, d_dir, do_pcc):
-    files = sorted(os.listdir(d_dir))
-    files_w_labels = []
+
+def get_labels(directory: str, data_dir: str, do_pcc: bool) -> tuple:
+    """
+    Get labels from files in a directory.
+
+    Parameters:
+    directory (str): The directory to get files from.
+    data_dir (str): The data directory.
+    do_pcc (bool): A flag to check if PCC is done.
+
+    Returns:
+    tuple: A tuple containing a list of files with labels and the number of classes.
+    """
+    files = sorted(os.listdir(data_dir))
+    files_with_labels = []
+
     if do_pcc:
-        pcc_df = pd.read_csv(f'{d}/structure_catalog_merged.csv', index_col=0)
-        for i, f in enumerate(tqdm(files)):
-            for idx, row in pcc_df.iterrows():
-                if row.Label == f or f in row.Similar:
-                    files_w_labels.append((f, idx))
-                    break
-                else:
-                    continue
-        n_class = len(pcc_df)
+        pcc_df = pd.read_csv(f'{directory}/structure_catalog_merged.csv', index_col=0)
+        print(f"Fetching labels:")
+        for i, file in enumerate(tqdm(files)):
+            idx_position = find_substring_in_dataframe(file, pcc_df)
+            files_with_labels.append((file, idx_position))
+        num_classes = len(pcc_df)
     else:
-        for i, f in enumerate(tqdm(files)):
-            files_w_labels.append((f, i)),
-        n_class = len(files_w_labels)
-    return files_w_labels, n_class
+        for i, file in enumerate(tqdm(files)):
+            files_with_labels.append((file, i))
+        num_classes = len(files_with_labels)
+
+    return files_with_labels, num_classes
 
 
+def find_substring_in_dataframe(substring: str, dataframe: pd.DataFrame) -> int:
+    """
+    This function finds the indices of a specified substring within a DataFrame.
+
+    Parameters:
+        substring (str): The substring to search for within the DataFrame.
+        dataframe (pd.DataFrame): The DataFrame to search in.
+
+    Returns:
+        list: A list of tuples containing the index(es) and column name(s) where the substring is found.
+    """
+    result = []
+
+    for column in dataframe.columns:
+        indices = dataframe[dataframe[column].astype(str).str.contains(substring)].index
+        for index in indices:
+            result.append((index, column))
+
+    return result[0][0]
 
 
 @dataclass
-class get_data:
+class DataFetcher:
+    """DataFetcher fetches and processes data for training, validation and testing.
+
+    Attributes:
+        directory (str): Directory where the data files are located.
+        project_name (str): Name of the project.
+        labels_n_files (str): Labels and files information.
+        drop_list (list): List of columns to be dropped from the DataFrame.
+    """
     directory: str
     project_name: str
-    labels_n_files: str
+    labels_n_files: list
     drop_list: list = field(default_factory=lambda: [
         'filename', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'Uiso', 'Psize', 'rmin', 'rmax', 'rstep', 'qmin', 'qmax', 'qdamp', 'delta2'
     ])
 
     def __post_init__(self):
-        ph = pd.read_csv(os.path.join(self.directory, self.labels_n_files[0][0]), index_col=0)
-        ph = self.drop_row(ph)
-        self.pdf_len = len(ph.iloc[0])
-        self.n_pdf = len(ph)
-        self.trn_len = math.ceil(self.n_pdf * .8)
-        self.vld_len = math.ceil((self.n_pdf - self.trn_len) / 2)
-        self.tst_len = self.n_pdf - (self.trn_len + self.vld_len)
-        print(f'{self.n_pdf}, {self.trn_len}, {self.vld_len}, {self.tst_len}')
+        """Initializes the object with additional properties."""
+        placeholder_df = pd.read_csv(os.path.join(self.directory, self.labels_n_files[0][0]), index_col=0)
+        placeholder_df = self.drop_rows(placeholder_df)
+        self.max_size = 100
+        placeholder_df = placeholder_df.head(self.max_size)
+        self.pdf_length = len(placeholder_df.iloc[0])
+        self.num_pdfs = len(placeholder_df)
+        self.train_length = math.ceil(self.num_pdfs * .8)
+        self.validate_length = math.ceil((self.num_pdfs - self.train_length) / 2)
+        self.test_length = self.num_pdfs - (self.train_length + self.validate_length)
 
-    def __call__(self, mode):
+    def __call__(self, mode: str) -> xgboost.DMatrix:
+        """Fetches and processes the data based on the provided mode.
+
+        Args:
+            mode (str): Mode of operation - 'trn', 'vld', or 'tst'.
+
+        Returns:
+            xgboost.DMatrix: The prepared data matrix.
+        """
         if mode == 'trn':
-            x = np.empty((len(self.labels_n_files)*self.trn_len, self.pdf_len))
-            y = np.empty((len(self.labels_n_files)*self.trn_len), dtype=np.int)
-            increment = self.trn_len
+            x, y, increment = self.init_arrays(self.train_length)
         elif mode == 'vld':
-            x = np.empty((len(self.labels_n_files)*self.vld_len, self.pdf_len))
-            y = np.empty((len(self.labels_n_files)*self.vld_len), dtype=np.int)
-            increment = self.vld_len
+            x, y, increment = self.init_arrays(self.validate_length)
         elif mode == 'tst':
-            x = np.empty((len(self.labels_n_files)*self.tst_len, self.pdf_len))
-            y = np.empty((len(self.labels_n_files)*self.tst_len), dtype=np.int)
-            increment = self.tst_len
-
-
-        print(f'x shape: {x.shape}, y shape: {y.shape}')
-        for idx, f in enumerate(self.labels_n_files):
+            x, y, increment = self.init_arrays(self.test_length)
+        else:
+            raise ValueError('Invalid mode. Valid modes are "trn", "vld", or "tst".')
+        print(f'{mode} data shape, x: {np.shape(x)}, y: {np.shape(y)}')
+        for idx, file in enumerate(self.labels_n_files):
             df = pd.read_csv(os.path.join(self.directory, self.labels_n_files[idx][0]), index_col=0)
             df = self.split_ratios(df, mode)
-            df = self.drop_row(df)
+            df = self.drop_rows(df)
             df['Label'] = self.labels_n_files[idx][1]
 
-
-            y_ph = df.Label.to_numpy()
-            y[idx*increment:(idx+1)*increment] = y_ph
-            x_ph = df.drop(['Label'], axis=1).to_numpy(dtype=np.float)
-            x[idx * increment:(idx + 1) * increment][:] = x_ph
+            y_placeholder = df.Label.to_numpy()
+            y[idx*increment:(idx+1)*increment] = y_placeholder
+            x_placeholder = df.drop(['Label'], axis=1).to_numpy(dtype=np.float)
+            x[idx * increment:(idx + 1) * increment][:] = x_placeholder
 
         return xgboost.DMatrix(x, label=y)
 
-    def split_ratios(self, df, mode):
-        if mode=='trn':
-            return df.iloc[:self.trn_len]
-        elif mode=='vld':
-            return df.iloc[self.trn_len:self.trn_len+self.vld_len]
-        elif mode=='tst':
-            return df.iloc[self.trn_len+self.vld_len:]
-        else:
-            raise('error')
-            sys.exit()
+    def init_arrays(self, increment: int) -> Tuple[np.ndarray, np.ndarray, int]:
+        """Initializes the arrays for data storage.
 
-    def drop_row(self, df):
-        for d in self.drop_list:
-            try:
-                df = df.drop([d], axis=1)
-            except:
-                pass
+        Args:
+            increment (int): Increment size for the data arrays.
+
+        Returns:
+            tuple: A tuple containing the initialized arrays and the increment.
+        """
+        x = np.empty((len(self.labels_n_files) * increment, self.pdf_length))
+        y = np.empty((len(self.labels_n_files) * increment), dtype=np.int)
+        return x, y, increment
+
+    def split_ratios(self, df, mode) -> pd.DataFrame:
+        """Splits the data into train, validation, or test based on the mode.
+
+        Args:
+            df (pandas.DataFrame): DataFrame to be split.
+            mode (str): Mode of operation - 'trn', 'vld', or 'tst'.
+
+        Returns:
+            pandas.DataFrame: The split DataFrame.
+        """
+        if mode == 'trn':
+            return df.iloc[:self.train_length]
+        elif mode == 'vld':
+            return df.iloc[self.train_length:self.train_length + self.validate_length]
+        elif mode == 'tst':
+            return df.iloc[self.train_length + self.validate_length:self.max_size]
+        else:
+            raise ValueError('Invalid mode. Valid modes are "trn", "vld", or "tst".')
+
+    def drop_rows(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Drops specified columns from the DataFrame.
+
+        Args:
+            df (pandas.DataFrame): DataFrame from which columns are to be dropped.
+
+        Returns:
+            pandas.DataFrame: The DataFrame after dropping the specified columns.
+        """
+        for drop_item in self.drop_list:
+            df = df.drop(columns=drop_item, errors='ignore')
         return df
 
+def get_data_splits_from_clean_data(
+        directory: str,
+        project_name: str,
+        pcc: bool = True
+    ) -> Tuple[xgboost.DMatrix, xgboost.DMatrix, xgboost.DMatrix, dict, int]:
+    """Fetches and prepares data splits for training, validation and testing.
+
+    This function first gets the labels of the data files in the directory. It then
+    creates an instance of the DataFetcher class to load and process the data.
+    The data is split into training, validation and testing sets. An evaluation set
+    containing the training and validation data is also prepared.
+
+    Args:
+        directory (str): Directory where the data files are located.
+        project_name (str): Name of the project.
+        pcc (bool, optional): If True, uses the Pearson correlation coefficient. Defaults to True.
+
+    Returns:
+        tuple: A tuple containing the training data, validation data, testing data,
+               the evaluation set, and the number of classes.
+    """
+    data_dir = os.path.join(directory, 'CIFs_clean_data')
+    files_w_labels, num_classes = get_labels(directory, data_dir, pcc)
+    save_labels(files_w_labels, directory, project_name)
+
+    data_obj = DataFetcher(data_dir, project_name, files_w_labels)
+
+    print('Construction data splits.')
+    train_data = data_obj('trn')
+    validation_data = data_obj('vld')
+    test_data = data_obj('tst')
+
+    eval_set = [(train_data, 'train'), (validation_data, 'validation')]
+
+    return train_data, validation_data, test_data, eval_set, num_classes
 
 
-def get_data_splits_from_clean_data(direcorty: str, project_name: str, pcc: bool=True):
-    data_dir = os.path.join(direcorty, 'CIFs_clean_data')
-    files_w_labels, n_class = get_labels(direcorty, data_dir, pcc)
-    save_label(files_w_labels, direcorty, project_name)
-
-    data_obj = get_data(data_dir, project_name, files_w_labels)
-    print('\nLoading training data')
-    trn_xy = data_obj('trn')
-    print('\nLoading validation data')
-    vld_xy = data_obj('vld')
-    print('\nLoading testing data')
-    tst_xy = data_obj('tst')
-
-    eval_set = [(trn_xy, 'train'), (vld_xy, 'validation')]
-
-    return trn_xy, vld_xy, tst_xy, eval_set, n_class
 

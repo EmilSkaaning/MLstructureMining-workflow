@@ -1,24 +1,40 @@
-# Installing
+[ChemRxiv]()  |  [Paper]()
 
-smt might give problems. Make sure GCC is updated on your Linux system
+# Structure-Finder
 
-$ sudo apt update
+## Install
 
-$ sudo apt install build-essential
+To run Structure-Finder please follow the steps below:
+1) Make sure that you are running a Python 3.7 on a Linux or MacOS as DiffPy-CMI requires that. Let us first create
+a new environment:
+````
+conda create --name ciff-env python=3.7
+````
+2) When the installation is completed, then install the required packages.
+````
+pip install -r requirements.txt
+````
+3) To install DiffPy-CMI used for simulating Pair Distribution Function (PDF) data, please follow the steps found 
+[HERE](https://www.diffpy.org/products/diffpycmi/index.html) or run the following code:
+```` 
+conda config --add channels diffpy
+conda install diffpy-cmi
+````
+4) Congratulations! You are now ready to training your own XGBoost model for structure suggestion of PDF data. 
 
-DiffPy-CMI needs to be install as shown on their homepage
+## Code Structure
+
+## Download CIFs from COD 
+
+## Generate data
+
+## Train model
+
+# Cite
+If you use our code or our results, please consider citing our paper. Thanks in advance!
 
 
-# Data preperation step
+# Author 
 
-1) simple_cif_converter
-    * Tries to streamline the format of COD's CIFs such that DiffPy-CMI can read it. 
-2) diffpy_check
-    * Tries to load the structures into DiffPy-CMI and simulate a PDF. A simple check of the PDF is made. Bad files are deleted
-3) simulator
-    * Simulates PDF from the cleaned files
-4) pearson_compare
-   * Compare PDFs, make structure catalog add labels and make data h5py
-5) Split data into training, validation and test set.  
-
-# Training model
+# License
+This project is licensed under the Apache License Version 2.0, January 2004 - see the [LICENSE](LICENSE) file for details.
