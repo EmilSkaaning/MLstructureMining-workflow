@@ -120,7 +120,7 @@ class DataFetcher:
             x, y, increment = self.init_arrays(self.test_length)
         else:
             raise ValueError('Invalid mode. Valid modes are "trn", "vld", or "tst".')
-
+        print(f'{mode} data shape, x: {np.shape(x)}, y: {np.shape(y)}')
         for idx, file in enumerate(self.labels_n_files):
             df = pd.read_csv(os.path.join(self.directory, self.labels_n_files[idx][0]), index_col=0)
             df = self.split_ratios(df, mode)
@@ -206,6 +206,7 @@ def get_data_splits_from_clean_data(
 
     data_obj = DataFetcher(data_dir, project_name, files_w_labels)
 
+    print('Construction data splits.')
     train_data = data_obj('trn')
     validation_data = data_obj('vld')
     test_data = data_obj('tst')
