@@ -1,6 +1,9 @@
 import os
+import yaml
 import pandas as pd
 import numpy as np
+from typing import Dict
+
 
 def get_files(directory: str) -> list:
     """
@@ -69,3 +72,18 @@ def accuracy_top_x(true_labels: np.ndarray, predicted_labels: np.ndarray, n: int
 
     # Calculate and return the accuracy
     return np.mean([1 if true_label in topn_row else 0 for true_label, topn_row in zip(true_labels, topn_predictions)])
+
+
+def save_dict_to_yaml(input_dict: Dict, file_path: str) -> None:
+    """
+    Save a dictionary to a YAML file.
+
+    Parameters:
+    input_dict (Dict): The dictionary to be saved.
+    file_path (str): The location where the YAML file will be saved.
+
+    Returns:
+    None
+    """
+    with open(file_path, 'w') as yaml_file:
+        yaml.dump(input_dict, yaml_file)
