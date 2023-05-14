@@ -4,14 +4,11 @@ import time
 import datetime
 import yaml
 import xgboost
-import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.metrics import log_loss, accuracy_score
-
 sys.path.append("..")
 from utils.data_loader_in_mem import get_data_splits_from_clean_data
-from utils.tools import accuracy_top_x
+from utils.tools import accuracy_top_x, save_dict_to_yaml
 from utils.plotting import plot_loss_curve
 
 def main_train(directory: str, n_cpu: int=1) -> None:
@@ -46,7 +43,7 @@ def main_train(directory: str, n_cpu: int=1) -> None:
     # Define parameters for xgboost training
     params = {
         'hp': hp,
-        'early_stopping_rounds': 1,
+        'early_stopping_rounds': 15,
         'num_boost_round': 999_999_999
     }
 
@@ -88,9 +85,9 @@ def main_train(directory: str, n_cpu: int=1) -> None:
         f'Acc: {acc:.2f}, top 3: {acc_3:.2f}, top5: {acc_5:.2f}, top7: {acc_7:.2f}'
     )
 
-    # Save the evaluation dictionary to a yaml file
-    with open(os.path.join(project_name, 'data.yml'), 'w') as outfile:
-        yaml.dump(eval_dict, outfile, default_flow_style=False)
+    # Save the evaluation dictionary and model parameters to a yaml file
+    save_dict_to_yaml(eval_dict, os.path.join(project_name, 'data.yml'))
+    save_dict_to_yaml(params, os.path.join(project_name, 'model_parameters.yml'))
 
     return None
 

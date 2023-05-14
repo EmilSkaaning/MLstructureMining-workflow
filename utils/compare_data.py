@@ -1,5 +1,4 @@
 import pandas as pd
-import concurrent.futures
 from tqdm import tqdm
 import numpy as np
 import os
@@ -9,6 +8,7 @@ from joblib import Parallel, delayed
 import time
 import sys
 from multiprocessing import Pool, Manager
+from typing import List, Union
 
 sys.path.append("..")
 from utils.tools import load_csv
@@ -135,11 +135,12 @@ def high_correlations(corr_matrix: np.ndarray, threshold: float):
     n = corr_matrix.shape[0]
     high_corr = {i: None for i in range(n)}  # Start with all None values
 
+    print('Finding high correlations:')
     # Get the indices where correlation is above the threshold
     indices = np.where(corr_matrix > threshold)
 
     # For each index where correlation is above the threshold, assign the column index to the row index in the dictionary
-    for row_index, col_index in zip(*indices):
+    for row_index, col_index in tqdm(zip(*indices), total=len(indices[0])):
         if high_corr[row_index] is None:
             high_corr[row_index] = [col_index]
         else:
@@ -196,9 +197,13 @@ def reduce_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 if current_index not in new_Y:
                     new_Y.append(current_index)
                     indices_to_drop.append(current_index)
-                    if df_copy.at[current_index, 'Y'] is not None:
+                    if current_index in df_copy.index and df_copy.at[current_index, 'Y'] is not None:
                         indices_to_explore.extend(df_copy.at[current_index, 'Y'])
             df_copy.at[i, 'Y'] = new_Y
+
+    indices_to_drop = list(set(indices_to_drop))  # remove any duplicates
+    indices_to_drop = [idx for idx in indices_to_drop if
+                       idx in df_copy.index]  # only keep indices that exist in the dataframe
     df_copy.drop(indices_to_drop, inplace=True)
     df_copy.reset_index(drop=True, inplace=True)  # optional: to have a nice continuous index
     return df_copy
@@ -221,19 +226,50 @@ def merge_similar_rows(df: pd.DataFrame) -> pd.DataFrame:
     """
     df_copy = df.copy()
     indices_to_drop = []
-    for i in tqdm(df_copy.index, desc='Merging similar rows'):
+    for idx, i in tqdm(enumerate(df_copy.index), desc='Merging similar rows'):
         if df_copy.at[i, 'Y'] is not None:
-            for j in range(i+1, len(df_copy)):
+            for j in df_copy.index[idx+1:]:
                 if df_copy.at[j, 'Y'] is not None:
                     # Check if there is any common element in the 'Y' lists
-                    common_elements = set(df_copy.at[i, 'Y']).intersection(df_copy.at[j, 'Y'])
-                    if common_elements:
+                    #common_elements = set(df_copy.at[i, 'Y']).intersection(df_copy.at[j, 'Y'])
+
+                    if share_element(df_copy.at[i, 'Y'], df_copy.at[j, 'Y']):
                         # If there are common elements, merge the rows
-                        df_copy.at[i, 'Y'].extend([df_copy.at[j, 'X']])
+                        update_val = flatten_and_sort([df_copy.at[i, 'Y'],df_copy.at[j, 'X'], df_copy.at[j, 'Y']])
+                        df_copy.at[i, 'Y'] = update_val
                         indices_to_drop.append(j)
     df_copy.drop(indices_to_drop, inplace=True)
-    df_copy.reset_index(drop=True, inplace=True)  # optional: to have a nice continuous index
+    #df_copy.reset_index(drop=True, inplace=True)  # optional: to have a nice continuous index
     return df_copy
+
+
+def flatten_and_sort(input_list: List[Union[int, List[int]]]) -> List[int]:
+    """
+    Flattens a nested list and sorts it in ascending order after removing duplicates.
+
+    Parameters:
+    input_list (List[Union[int, List[int]]]): The input list, which may contain integers and/or lists of integers.
+
+    Returns:
+    List[int]: A sorted list of unique integers.
+    """
+
+    # Flatten the nested list
+    flat_list = []
+    for item in input_list:
+        if isinstance(item, list):
+            flat_list.extend(item)
+        else:
+            flat_list.append(item)
+
+    # Convert to set to remove duplicates, then convert back to list and sort
+    unique_sorted_list = sorted(list(set(flat_list)))
+
+    return unique_sorted_list
+
+
+def share_element(list1, list2):
+    return bool(set(list1) & set(list2))
 
 
 def check_no_duplicates_and_all_present(df: pd.DataFrame, n_max: int) -> bool:
@@ -256,6 +292,8 @@ def check_no_duplicates_and_all_present(df: pd.DataFrame, n_max: int) -> bool:
     for i in df.index:
         # Check 'X' value
         if df.at[i, 'X'] in seen:
+            print(df.at[i, 'X'])
+            print('Non unique value found in X!')
             return False
         seen.add(df.at[i, 'X'])
 
@@ -263,19 +301,19 @@ def check_no_duplicates_and_all_present(df: pd.DataFrame, n_max: int) -> bool:
         if df.at[i, 'Y'] is not None:
             for y in df.at[i, 'Y']:
                 if y in seen:
+                    print(df.at[i, 'Y'])
+                    print('Non unique value found in Y!')
                     return False
                 seen.add(y)
 
     # Check that all integers from 0 to n_max are present
     expected_set = set(range(n_max + 1))  # +1 because range is exclusive at the upper end
     if seen != expected_set:
+        print('Missing set!')
         return False
 
     # If we have checked all values, found no duplications, and all integers are present, return True
     return True
-
-
-
 
 
 def replace_integers_with_strings(df: pd.DataFrame, string_list: list) -> pd.DataFrame:
@@ -302,6 +340,7 @@ def replace_integers_with_strings(df: pd.DataFrame, string_list: list) -> pd.Dat
 
     return df
 
+
 def generate_structure_catalog(directory: str, pcc_th: float, n_cpu: int = 2) -> None:
     head, tail = os.path.split(directory)
     print('\nCalculating structure catalog')
@@ -312,12 +351,20 @@ def generate_structure_catalog(directory: str, pcc_th: float, n_cpu: int = 2) ->
 
     corr_df = high_correlations(corr_mat, pcc_th)
     n_val = len(corr_df) - 1
+
     corr_df = reduce_pcc_wf(corr_df)
+
     count = 0
     while check_no_duplicates_and_all_present(corr_df, n_val)==False:
         print('Performing additional reduction', count)
         corr_df = reduce_pcc_wf(corr_df)
+
         count += 1
+        if count == 999_999:  # safety break
+            break
+    corr_df.reset_index(drop=True, inplace=True)  # optional: to have a nice continuous index
+    corr_df.to_csv(os.path.join(head, 'structure_catalog_merged.csv'))
+
 
     corr_df = replace_integers_with_strings(corr_df, f_names)
     print(f'After reduction a total of {len(corr_df)} classes still exist.')
