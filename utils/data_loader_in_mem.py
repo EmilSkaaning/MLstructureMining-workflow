@@ -206,7 +206,7 @@ def get_data_splits_from_clean_data(
 
     data_obj = DataFetcher(data_dir, project_name, files_w_labels)
 
-    print('Construction data splits.')
+    print('\nConstruction data splits.')
     train_data = data_obj('trn')
     validation_data = data_obj('vld')
     test_data = data_obj('tst')

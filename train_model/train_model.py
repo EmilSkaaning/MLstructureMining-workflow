@@ -43,7 +43,7 @@ def main_train(directory: str, n_cpu: int=1) -> None:
     # Define parameters for xgboost training
     params = {
         'hp': hp,
-        'early_stopping_rounds': 15,
+        'early_stopping_rounds': 100,
         'num_boost_round': 999_999_999
     }
 
