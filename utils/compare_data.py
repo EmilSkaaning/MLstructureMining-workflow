@@ -7,6 +7,7 @@ from scipy.stats import pearsonr
 from joblib import Parallel, delayed
 import time
 import sys
+import ast
 from multiprocessing import Pool, Manager
 from typing import List, Union
 
@@ -114,8 +115,8 @@ def correlation_matrix(data: np.array, n_cpu: int) -> np.array:
     )
 
     # Assign the correlations to the upper half of the matrix
+    print('\nAssigning indices to PCC value, please be patient.')
     corr_matrix[upper_indices] = correlations
-
     return corr_matrix
 
 
@@ -135,7 +136,7 @@ def high_correlations(corr_matrix: np.ndarray, threshold: float):
     n = corr_matrix.shape[0]
     high_corr = {i: None for i in range(n)}  # Start with all None values
 
-    print('Finding high correlations:')
+    print('\nFinding high correlations:')
     # Get the indices where correlation is above the threshold
     indices = np.where(corr_matrix > threshold)
 
@@ -347,9 +348,16 @@ def generate_structure_catalog(directory: str, pcc_th: float, n_cpu: int = 2) ->
     start = time.time()
     data, f_names = get_data(directory, n_cpu)
 
-    corr_mat = correlation_matrix(data, n_cpu)
+    if not os.path.isfile(os.path.join(head, 'structure_catalog.csv')):  # Computational heavy, skip if possible
+        corr_mat = correlation_matrix(data, n_cpu)
+        corr_df = high_correlations(corr_mat, pcc_th)
+        corr_df.to_csv(os.path.join(head, 'structure_catalog.csv'))
+    else:
+        corr_df = pd.read_csv(os.path.join(head, 'structure_catalog.csv'), index_col=0)
+        corr_df['Y'] = corr_df['Y'].apply(lambda x: ast.literal_eval(x) if pd.notnull(x) else x)
 
-    corr_df = high_correlations(corr_mat, pcc_th)
+        corr_df = corr_df.where(pd.notnull(corr_df), None)
+
     n_val = len(corr_df) - 1
 
     corr_df = reduce_pcc_wf(corr_df)
