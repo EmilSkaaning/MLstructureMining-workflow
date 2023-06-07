@@ -2,7 +2,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_loss_curve(evaluation_dict: dict, project_name: str, mlogloss_test: float, plot_title: str) -> None:
+def plot_loss_curve(evaluation_dict: dict, project_name: str, mlogloss_test: float, plot_title: str, file_title: str) -> None:
     """
     Plot the loss curve and save it as a PNG file.
 
@@ -34,4 +34,5 @@ def plot_loss_curve(evaluation_dict: dict, project_name: str, mlogloss_test: flo
     plt.tight_layout()
 
     # Save the plot
-    plt.savefig(os.path.join(project_name, 'loss_curve.png'), dpi=300)
+    plt.savefig(os.path.join(project_name, f'{file_title}.png'), dpi=300)
+    plt.clf()
