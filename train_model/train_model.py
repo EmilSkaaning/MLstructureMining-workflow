@@ -66,7 +66,7 @@ def iterative_train(n_iterations, params, trn_xy, tst_xy, eval_set, project_name
     return booster
 
 
-def main_train(directory: str, n_cpu: int=1) -> None:
+def main_train(directory: str, n_cpu: int=1, simple_load: bool=False) -> None:
     """Function to train the model and save the results.
 
     Parameters:
@@ -80,7 +80,8 @@ def main_train(directory: str, n_cpu: int=1) -> None:
     os.makedirs(project_name, exist_ok=True)
 
     # Get the data splits
-    trn_xy, vld_xy, tst_xy, eval_set, n_classes = get_data_splits_from_clean_data(directory, project_name)
+    print(simple_load)
+    trn_xy, vld_xy, tst_xy, eval_set, n_classes = get_data_splits_from_clean_data(directory, project_name, simple_load=simple_load)
 
     # Define hyperparameters
     hp = {
@@ -99,14 +100,14 @@ def main_train(directory: str, n_cpu: int=1) -> None:
     params = {
         'hp': hp,
         'early_stopping_rounds': 5,
-        'num_boost_round': 1000
+        'num_boost_round': 10_000
     }
     save_dict_to_yaml(params, os.path.join(project_name, 'model_parameters.yml'))
 
     # Train the xgboost model
     start_time = time.time()
 
-    _ = iterative_train(25, params, trn_xy, tst_xy, eval_set, project_name)
+    _ = iterative_train(5, params, trn_xy, tst_xy, eval_set, project_name)
 
     total_time = time.time() - start_time
     print('\nTraining, took {:6.1f} h.'.format(total_time / 3600))
@@ -119,6 +120,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train a model with xgboost.')
     parser.add_argument('directory', type=str, help='The directory where the data is located.')
     parser.add_argument('-n', '--n_cpu', type=int, default=1, help='The number of CPUs to use for training.')
+    parser.add_argument('-s', '--simple_load', default=False, help='If true only one type of structure is loaded per class.', action='store_true')
     args = parser.parse_args()
 
-    main_train(args.directory, args.n_cpu)
+    main_train(args.directory, args.n_cpu, args.simple_load)
