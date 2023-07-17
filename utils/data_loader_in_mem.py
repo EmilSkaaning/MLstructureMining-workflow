@@ -92,6 +92,7 @@ class DataFetcher:
     directory: str
     project_name: str
     labels_n_files: list
+    n_data: int
     drop_list: list = field(default_factory=lambda: [
         'filename', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'Uiso', 'Psize', 'rmin', 'rmax', 'rstep', 'qmin', 'qmax', 'qdamp', 'delta2'
     ])
@@ -100,7 +101,7 @@ class DataFetcher:
         """Initializes the object with additional properties."""
         placeholder_df = pd.read_csv(os.path.join(self.directory, self.labels_n_files[0][0]), index_col=0)
         placeholder_df = self.drop_rows(placeholder_df)
-        self.max_size = 200  # todo: make this an input
+        self.max_size = self.n_data  # todo: make this an input
         placeholder_df = placeholder_df.head(self.max_size)
         self.pdf_length = len(placeholder_df.iloc[0])
         self.num_pdfs = len(placeholder_df)
@@ -188,7 +189,8 @@ def get_data_splits_from_clean_data(
         directory: str,
         project_name: str,
         pcc: bool = True,
-        simple_load: bool = False
+        simple_load: bool = False,
+        n_data: int = 100
     ) -> Tuple[xgboost.DMatrix, xgboost.DMatrix, xgboost.DMatrix, dict, int]:
     """Fetches and prepares data splits for training, validation and testing.
 
@@ -210,7 +212,7 @@ def get_data_splits_from_clean_data(
     files_w_labels, num_classes = get_labels(directory, data_dir, pcc, simple_load)
     save_labels(files_w_labels, directory, project_name)
 
-    data_obj = DataFetcher(data_dir, project_name, files_w_labels)
+    data_obj = DataFetcher(data_dir, project_name, files_w_labels, n_data)
 
     print('\nConstruction data splits.')
     train_data = data_obj('trn')
