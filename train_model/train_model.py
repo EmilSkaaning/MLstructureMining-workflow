@@ -98,7 +98,7 @@ def main_train(directory: str, n_cpu: int=1, simple_load: bool=False, n_data: in
     # Define parameters for xgboost training
     params = {
         'hp': hp,
-        'early_stopping_rounds': 50,
+        'early_stopping_rounds': 5,
         'num_boost_round': 1_000
     }
     save_dict_to_yaml(params, os.path.join(project_name, 'model_parameters.yml'))
@@ -106,7 +106,7 @@ def main_train(directory: str, n_cpu: int=1, simple_load: bool=False, n_data: in
     # Train the xgboost model
     start_time = time.time()
 
-    _ = iterative_train(25, params, trn_xy, tst_xy, eval_set, project_name)
+    _ = iterative_train(10, params, trn_xy, tst_xy, eval_set, project_name)
 
     total_time = time.time() - start_time
     print('\nTraining, took {:6.1f} h.'.format(total_time / 3600))

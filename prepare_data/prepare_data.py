@@ -55,3 +55,6 @@ if __name__ == '__main__':
         args.pcc_th,
         args.n_simulations
     )
+    
+    from train_model.train_model import main_train
+    main_train(project, 120, True, 100)
