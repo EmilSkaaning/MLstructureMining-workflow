@@ -101,8 +101,12 @@ class DataFetcher:
         """Initializes the object with additional properties."""
         placeholder_df = pd.read_csv(os.path.join(self.directory, self.labels_n_files[0][0]), index_col=0)
         placeholder_df = self.drop_rows(placeholder_df)
-        self.max_size = self.n_data  # todo: make this an input
-        placeholder_df = placeholder_df.head(self.max_size)
+        if self.n_data == -1:
+            self.max_size = len(placeholder_df)
+        else:
+            self.max_size = self.n_data  # todo: make this an input
+            placeholder_df = placeholder_df.head(self.max_size)
+
         self.pdf_length = len(placeholder_df.iloc[0])
         self.num_pdfs = len(placeholder_df)
         self.train_length = math.ceil(self.num_pdfs * .8)
