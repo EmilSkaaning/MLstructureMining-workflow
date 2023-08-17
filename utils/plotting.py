@@ -1,38 +1,47 @@
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+from typing import Dict
 
-def plot_loss_curve(evaluation_dict: dict, project_name: str, mlogloss_test: float, plot_title: str, file_title: str) -> None:
+def plot_loss_curve(evaluation_dict: Dict[str, dict], project_name: str, mlogloss_test: float, 
+                    plot_title: str, file_title: str) -> None:
     """
-    Plot the loss curve and save it as a PNG file.
+    Plot the loss curve based on the evaluation dictionary and save it as a PNG file.
 
-    Parameters:
-    evaluation_dict (dict): A dictionary with the evaluation results.
-    project_name (str): The name of the project, used to save the plot.
-    mlogloss_test (float): The test multi-logloss value.
-    plot_title (str): The title for the plot.
+    Parameters
+    ----------
+    evaluation_dict : Dict[str, dict]
+        A dictionary with the evaluation results.
+    project_name : str
+        The name of the project, used to save the plot.
+    mlogloss_test : float
+        The test multi-logloss value.
+    plot_title : str
+        The title for the plot.
+    file_title : str
+        The title used for saving the file.
 
-    Returns:
+    Returns
+    -------
     None
     """
-
-    # Iterate over the keys in the evaluation dictionary
     for key in evaluation_dict.keys():
-        # Plot the mlogloss for each key
         plt.plot(np.arange(len(evaluation_dict[key]['mlogloss'])), evaluation_dict[key]['mlogloss'], label=key)
 
-    # Add a horizontal line for the test mlogloss
+    # Plotting the horizontal line for test mlogloss value
     plt.axhline(mlogloss_test, linestyle='--', color='green', label='test')
-
-    # Label the plot
+    
     plt.ylabel('mlogloss')
     plt.xlabel('epochs')
     plt.title(plot_title)
     plt.legend()
 
-    # Adjust subplot parameters to give specified padding
+    # Adjust the layout
     plt.tight_layout()
 
-    # Save the plot
-    plt.savefig(os.path.join(project_name, f'{file_title}.png'), dpi=300)
+    # Save the plot to the specified path
+    save_dir = os.path.join(project_name, "img")
+    if not os.path.isdir(save_dir):
+        os.mkdir(save_dir)
+    plt.savefig(os.path.join(save_dir, f'{file_title}.png'), dpi=300)
     plt.clf()

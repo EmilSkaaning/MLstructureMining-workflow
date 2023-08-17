@@ -1,28 +1,13 @@
-import os, math
-import sys
+import math
+import os
+import shutil
+from dataclasses import dataclass, field
+from typing import Dict, List, Tuple, Union
 
-import xgboost
 import numpy as np
 import pandas as pd
+import xgboost
 from tqdm import tqdm
-from dataclasses import dataclass, field
-from typing import Tuple
-
-
-def save_labels(data: pd.DataFrame, directory: str, project_name: str) -> None:
-    """
-    Save labels as a csv file.
-
-    Parameters:
-    data (pd.DataFrame): The data to save.
-    directory (str): The directory to save the file in.
-    project_name (str): The name of the project.
-
-    Returns:
-    None
-    """
-    df = pd.DataFrame(data)
-    df.to_csv(os.path.join(directory, project_name, 'labels.csv'))
 
 
 def get_labels(directory: str, data_dir: str, do_pcc: bool, simple_load: bool) -> tuple:
@@ -81,19 +66,26 @@ def find_substring_in_dataframe(substring: str, dataframe: pd.DataFrame) -> int:
 
 @dataclass
 class DataFetcher:
-    """DataFetcher fetches and processes data for training, validation and testing.
+    """DataFetcher fetches and processes data for training, validation, and testing.
 
-    Attributes:
-        directory (str): Directory where the data files are located.
-        project_name (str): Name of the project.
-        labels_n_files (str): Labels and files information.
-        drop_list (list): List of columns to be dropped from the DataFrame.
+    Attributes
+    ----------
+    directory : str
+        Directory where the data files are located.
+    project_name : str
+        Name of the project.
+    labels_n_files : List[Tuple[str, int]]
+        Labels and files information.
+    n_data : int
+        Number of data.
+    drop_list : List[str]
+        List of columns to be dropped from the DataFrame.
     """
     directory: str
     project_name: str
-    labels_n_files: list
+    labels_n_files: List[Tuple[str, int]]
     n_data: int
-    drop_list: list = field(default_factory=lambda: [
+    drop_list: List[str] = field(default_factory=lambda: [
         'filename', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'Uiso', 'Psize', 'rmin', 'rmax', 'rstep', 'qmin', 'qmax', 'qdamp', 'delta2'
     ])
 
@@ -195,26 +187,37 @@ def get_data_splits_from_clean_data(
         pcc: bool = True,
         simple_load: bool = False,
         n_data: int = 100
-    ) -> Tuple[xgboost.DMatrix, xgboost.DMatrix, xgboost.DMatrix, dict, int]:
-    """Fetches and prepares data splits for training, validation and testing.
+    ) -> Tuple[xgboost.DMatrix, xgboost.DMatrix, xgboost.DMatrix, Dict[str, xgboost.DMatrix], int]:
+    """
+    Fetches and prepares data splits for training, validation, and testing.
 
     This function first gets the labels of the data files in the directory. It then
     creates an instance of the DataFetcher class to load and process the data.
-    The data is split into training, validation and testing sets. An evaluation set
+    The data is split into training, validation, and testing sets. An evaluation set
     containing the training and validation data is also prepared.
 
-    Args:
-        directory (str): Directory where the data files are located.
-        project_name (str): Name of the project.
-        pcc (bool, optional): If True, uses the Pearson correlation coefficient. Defaults to True.
+    Parameters
+    ----------
+    directory : str
+        Directory where the data files are located.
+    project_name : str
+        Name of the project.
+    pcc : bool, optional
+        If True, uses the Pearson correlation coefficient. Defaults to True.
+    simple_load : bool, optional
+        If True, uses a simple loading mechanism. Defaults to False.
+    n_data : int, optional
+        Number of data samples to load. Defaults to 100.
 
-    Returns:
-        tuple: A tuple containing the training data, validation data, testing data,
-               the evaluation set, and the number of classes.
+    Returns
+    -------
+    tuple
+        A tuple containing the training data, validation data, testing data,
+        the evaluation set, and the number of classes.
     """
     data_dir = os.path.join(directory, 'CIFs_clean_data')
     files_w_labels, num_classes = get_labels(directory, data_dir, pcc, simple_load)
-    save_labels(files_w_labels, directory, project_name)
+    shutil.copy2(os.path.join(directory, 'structure_catalog_merged.csv'), os.path.join(directory, project_name, 'labels.csv'))
 
     data_obj = DataFetcher(data_dir, project_name, files_w_labels, n_data)
 

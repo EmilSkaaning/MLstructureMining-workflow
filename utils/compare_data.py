@@ -7,7 +7,6 @@ from scipy.stats import pearsonr
 from joblib import Parallel, delayed
 import time
 import sys
-import ast
 from multiprocessing import Pool, Manager
 from typing import List, Union
 
@@ -373,12 +372,7 @@ if __name__ == '__main__':
     parser.add_argument('directory', type=str, help='Directory containing the data files.')
     parser.add_argument('pcc_th', type=float, help='Pearson Correlation Coefficient threshold.')
     parser.add_argument('--n_cpu', type=int, default=2, help='Number of CPUs to use. Default is 2.')
-
     args = parser.parse_args()
 
     project_dir = generate_structure_catalog(args.directory, args.pcc_th, args.n_cpu)
 
-    sys.path.append("../train_model")
-    from train_model import main_train
-
-    main_train(project_dir, args.n_cpu)
