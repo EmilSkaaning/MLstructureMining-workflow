@@ -1,4 +1,4 @@
-# Project Name (replace with your project's name)
+# Building a structure library from Crystallography Open Database (COD)
 
 This project focuses on processing and extracting data from Crystallography Open Database (COD) CIF files to generate training data. The entire process is broken down into three main steps:
 
