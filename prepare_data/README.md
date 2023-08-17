@@ -26,6 +26,6 @@ The main steps carried out by the script are as follows:
 
 You can run the script using the command line interface as follows:
 
-```sh
+```
 python main.py <stru_directory> --project_name <project> --n_cpu 4 --pcc_th 0.8 --n_simulations 20
 ```

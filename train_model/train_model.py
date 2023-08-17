@@ -35,7 +35,7 @@ hp: Dict[str, Union[str, int, float]] = {
 # Define parameters for xgboost training
 params: Dict[str, Union[Dict, int, float]] = {
     "hp": hp,
-    "early_stopping_rounds": 25,
+    "early_stopping_rounds": 5,
     "num_boost_round": 10,
     "verbose_eval": 250,
     "subsample": 0.5,
