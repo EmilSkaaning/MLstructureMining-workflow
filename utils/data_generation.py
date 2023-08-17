@@ -1,15 +1,18 @@
 import os
+import sys
 import time
+import argparse
 import multiprocessing
 from functools import partial
+from typing import List, Dict, Union
+
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 from diffpy.Structure import loadStructure
 from diffpy.srreal.pdfcalculator import PDFCalculator
 from smt.sampling_methods import LHS
-from tqdm import tqdm
-import argparse
-import sys
+
 sys.path.append("..")
 from utils.tools import get_files
 
@@ -19,17 +22,21 @@ class sim_pdfs:
     """
     A class for simulating PDFs based on parameters.
 
-    Args:
-    file (str): The name of the file.
-    cif_dir (str): The directory where CIF files are stored.
-    save_dir (str): The directory where results will be saved.
-    sim_range (dict): A dictionary containing the range of values for simulation parameters.
-    split (int): The number of splits for the Latin Hypercube Sampling.
-
-    Returns:
-    None. This class does not return a value but saves the results in the specified directory.
+    Parameters
+    ----------
+    file : str
+        The name of the file.
+    cif_dir : str
+        The directory where CIF files are stored.
+    save_dir : str
+        The directory where results will be saved.
+    sim_range : dict
+        A dictionary containing the range of values for simulation parameters.
+    split : int
+        The number of splits for the Latin Hypercube Sampling.
     """
-    def __init__(self, file: str, cif_dir: str, save_dir: str, sim_range: dict, split: int):
+
+    def __init__(self, file: str, cif_dir: str, save_dir: str, sim_range: Dict[str, List[Union[float, None]]], split: int):
         self.cif_dir = cif_dir
         self.save_dir = save_dir
         self.init_df(file)
@@ -40,7 +47,7 @@ class sim_pdfs:
 
         self.csv.set_index('filename')
         self.csv.to_csv(os.path.join(self.save_dir, self.filename))
-
+        
     def init_df(self, file: str) -> None:
         self.filename = f'{file[:-4]}.csv'
         self.sim_para = [
@@ -137,18 +144,24 @@ class sim_pdfs:
         return ph
 
 
-def get_structures(directory: str, savedir: str, split: int) -> list:
+def get_structures(directory: str, savedir: str, split: int) -> List[str]:
     """
-    This function checks if there are already simulated data in the folder and if they are having the proper dimensions.
-    If this is not the case then they are deleted.
+    Checks for already simulated data in the folder and ensures they have proper dimensions. 
+    If not, they are deleted.
 
-    Parameters:
-    directory (str): The directory where the original files are located.
-    savedir (str): The directory where the simulated files are saved.
-    split (int): The expected length of the simulated files.
+    Parameters
+    ----------
+    directory : str
+        The directory where the original files are located.
+    savedir : str
+        The directory where the simulated files are saved.
+    split : int
+        The expected length of the simulated files.
 
-    Returns:
-    list: A list of filenames of files that do not have a corresponding simulated file with the proper dimensions.
+    Returns
+    -------
+    list
+        A list of filenames of files that do not have a corresponding simulated file with the proper dimensions.
     """
 
     # Get lists of files in the directory and savedir
@@ -184,6 +197,23 @@ def get_structures(directory: str, savedir: str, split: int) -> list:
 
 
 def simulate_pdfs(stru_path: str, n_cpu: int = 1, n_simulations: int = 10) -> str:
+    """
+    Simulate PDFs for given parameters.
+
+    Parameters
+    ----------
+    stru_path : str
+        Path to the structure directory.
+    n_cpu : int, optional
+        Number of CPUs to use for simulation. Defaults to 1.
+    n_simulations : int, optional
+        Number of simulations to run. Defaults to 10.
+
+    Returns
+    -------
+    str
+        Directory where the simulated PDFs are saved.
+    """
     savedir = f'{stru_path}_data'
     get_files(savedir)
 

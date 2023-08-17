@@ -1,11 +1,11 @@
-import multiprocessing
 import os
-import re
 import sys
+import re
 import time
 import argparse
+import multiprocessing
 from functools import partial
-from typing import Optional
+from typing import Optional, List
 from tqdm import tqdm
 sys.path.append("..")
 from utils.tools import get_files
@@ -23,32 +23,28 @@ DECIMAL_REPLACEMENTS = {
 }
 
 def convert_cif(r_path: str, w_path: str, n_cpu: Optional[int] = 1) -> str:
-    """
-    Converts CIFs from the Crystallography Open Database into files suitable for DiffPy-CMI.
-    A new folder will be created with the new CIFs.
-
+    """Convert CIFs from the Crystallography Open Database to DiffPy-CMI format.
+    
     Parameters
     ----------
-    r_path: str. Read path to the folder containing all the desired CIFs. Path must be absolute.
-    w_path: str. Write path where reformated CIFs will be saved. Path must be absolute.
-    n_cpu: int. Number of CPUs used for multiprocessing.
+    r_path : str
+        Absolute path to the folder containing all the desired CIFs.
+    w_path : str
+        Absolute path where reformatted CIFs will be saved.
+    n_cpu : int, optional
+        Number of CPUs used for multiprocessing, by default 1.
 
     Returns
     -------
-    w_path: str. The path to where all the new CIFs are saved.
+    str
+        The path to where all the new CIFs are saved.
     """
     print('\nConverting CIFs to DiffPy-CMI format')
+    
     w_path = os.path.join(w_path, "CIFs_clean")
     files = os.listdir(r_path)
 
-    if os.path.isdir(w_path):
-        files_cleaned = os.listdir(w_path)
-        files = [file for file in files if file not in files_cleaned]
-        if not files:
-            print('All files are already cleaned')
-            return w_path
-    else:
-        os.mkdir(w_path)
+    prepare_write_directory(w_path, files)
 
     files_w = get_files(w_path)
     files = sorted([file for file in files if file.endswith(CIF_EXTENSION)])
@@ -57,64 +53,66 @@ def convert_cif(r_path: str, w_path: str, n_cpu: Optional[int] = 1) -> str:
 
     start_time = time.time()
 
-    pbar = tqdm(total=len(files))
     with multiprocessing.Pool(processes=n_cpu) as pool:
         call_converter_partial = partial(call_converter, files_w=files_w, r_path=r_path, w_path=w_path)
-        for _ in pool.imap_unordered(call_converter_partial, files):
-            pbar.update()
-
-    pbar.close()
+        list(tqdm(pool.imap_unordered(call_converter_partial, files), total=len(files), desc='Converting'))
 
     total_time = time.time() - start_time
-    print('\nDone, took {:6.1f} h.'.format(total_time / 3600))
+    print(f'\nDone, took {total_time / 3600:.1f} h.')
     return w_path
 
 
-def call_converter(file: str, files_w: list, r_path: str, w_path: str) -> None:
-    """
-    Processes a single CIF file and writes the processed content to a new file.
-
+def prepare_write_directory(w_path: str, files: List[str]) -> None:
+    """Check and prepare the write directory.
+    
     Parameters
     ----------
-    file: str. The name of the file to process.
-    files_w: list. The list of already processed files.
-    r_path: str. The directory where the file resides.
-    w_path: str. The directory where the processed file should be written.
+    w_path : str
+        Path to the write directory.
+    files : List[str]
+        List of filenames in the read directory.
     """
-    if file in files_w:
-        return
-
-    lines = read_file(os.path.join(r_path, file))
-
-    check = False
-    new_file = []
-    for line in lines:
-        line = line.decode("utf-8", errors='ignore')
-
-        if '_atom_site_type_symbol' in line:
-            check = True
-        elif check == True and 'loop_' in line:
-            check = False
-
-        if check:
-            line = re.sub(r'\d\+', '', line)
-            line = re.sub(r'\d\-', '', line)
-        new_file.append(line)
-
-    write_file(os.path.join(w_path, f'{os.path.splitext(file)[0]}{CIF_EXTENSION}'), new_file)
+    if os.path.isdir(w_path):
+        files_cleaned = os.listdir(w_path)
+        files[:] = [file for file in files if file not in files_cleaned]
+        if not files:
+            print('All files are already cleaned')
+    else:
+        os.mkdir(w_path)
 
 
-def read_file(file_path: str) -> list:
-    """
-    Reads the content of a file and returns it as a list of lines.
-
+def call_converter(file: str, files_w: List[str], r_path: str, w_path: str) -> None:
+    """Process a single CIF file and write the processed content to a new file.
+    
     Parameters
     ----------
-    file_path: str. The path to the file to read.
+    file : str
+        Name of the file to process.
+    files_w : List[str]
+        List of already processed files.
+    r_path : str
+        Directory where the file resides.
+    w_path : str
+        Directory where the processed file should be written.
+    """
+    if file not in files_w:
+        lines = read_file(os.path.join(r_path, file))
+        new_file = process_lines(lines)
+        write_file(os.path.join(w_path, f'{os.path.splitext(file)[0]}{CIF_EXTENSION}'), new_file)
+
+
+def read_file(file_path: str) -> List[str]:
+    """Read the content of a file and return it as a list of lines.
+    
+    Parameters
+    ----------
+    file_path : str
+        Path to the file to read.
 
     Returns
     -------
-    list: The content of the file as a list of lines.
+    List[str]
+        Content of the file as a list of lines.
     """
     try:
         with open(file_path, 'rb') as f:
@@ -124,14 +122,46 @@ def read_file(file_path: str) -> list:
         return []
 
 
-def write_file(file_path: str, lines: list) -> None:
-    """
-    Writes a list of lines to a file.
-
+def process_lines(lines: List[str]) -> List[str]:
+    """Process the lines from a CIF file and return the modified content.
+    
     Parameters
     ----------
-    file_path: str. The path to the file to write.
-    lines: list. The content to write to the file.
+    lines : List[str]
+        Original lines from the CIF file.
+
+    Returns
+    -------
+    List[str]
+        Processed lines for the new CIF file.
+    """
+    check = False
+    new_file = []
+    for line in lines:
+        line = line.decode("utf-8", errors='ignore')
+
+        if '_atom_site_type_symbol' in line:
+            check = True
+        elif check and 'loop_' in line:
+            check = False
+
+        if check:
+            line = re.sub(r'\d\+', '', line)
+            line = re.sub(r'\d\-', '', line)
+        new_file.append(line)
+    
+    return new_file
+
+
+def write_file(file_path: str, lines: List[str]) -> None:
+    """Write a list of lines to a file.
+    
+    Parameters
+    ----------
+    file_path : str
+        Path to the file to write.
+    lines : List[str]
+        Content to write to the file.
     """
     with open(file_path, 'w') as f:
         for line in lines:
@@ -140,31 +170,29 @@ def write_file(file_path: str, lines: list) -> None:
 
 
 def fix_decimals(line: str) -> str:
-    """
-    Replaces known incorrect decimal values in a string with corrected ones.
-
+    """Replace known incorrect decimal values in a string with corrected ones.
+    
     Parameters
     ----------
-    line: str. The string to process.
+    line : str
+        String to process.
 
     Returns
     -------
-    str: The processed string with corrected decimal values.
+    str
+        Processed string with corrected decimal values.
     """
     for original, replacement in DECIMAL_REPLACEMENTS.items():
-        if original in line:
-            line = line.replace(original, replacement)
+        line = line.replace(original, replacement)
     return line
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Converts CIFs from the Crystallography Open Database into files suitable for DiffPy-CMI.")
-    parser.add_argument("r_path", type=str, help="Read path to the folder containing all the desired CIFs. Path must be absolute.")
-    parser.add_argument("w_path", type=str, help="Write path where reformatted CIFs will be saved. Path must be absolute.")
+    parser.add_argument("r_path", type=str, help="Absolute path to the folder containing all the desired CIFs.")
+    parser.add_argument("w_path", type=str, help="Absolute path where reformatted CIFs will be saved.")
     parser.add_argument("--n_cpu", type=int, default=1, help="Number of CPUs used for multiprocessing. Default is 1.")
-
     args = parser.parse_args()
-
     convert_cif(args.r_path, args.w_path, args.n_cpu)
 
 

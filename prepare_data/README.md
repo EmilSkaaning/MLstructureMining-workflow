@@ -8,7 +8,7 @@ The main steps carried out by the script are as follows:
 
 1. If no project name is provided, a new directory is created with a timestamp as its name.
 2. The CIF files are converted to a format readable for DiffPy-CMI using the `convert_cif` function from the `cif_converter` module.
-3. The converted CIF files are checked to ensure that DiffPy-CMI can simulate proper PDFs using the `check_cifs` function from the `check_cifs` module.
+3. The converted CIF files are checked to ensure that DiffPy-CMI can simulate proper PDFs using the `check_cif_files` function from the `check_cifs` module.
 4. PDFs are simulated using the reformatted CIFs with the `simulate_PDFs` function from the `data_generation` module.
 5. A structure catalog is generated with the `generate_structure_catalog` function from the `compare_data` module. This function uses the Pearson Correlation Coefficient to reduce the number of total classes.
 
