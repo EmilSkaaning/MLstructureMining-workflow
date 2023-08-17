@@ -53,7 +53,6 @@ search_space = {
     'gamma': (0, 10.0),
 }
 
-
 def test_model(booster, tst_xy, eval_dict, project_name, img_title: str):
     pred = booster.predict(tst_xy)
     pred_label = np.argmax(pred, axis=1)
