@@ -85,5 +85,14 @@ def save_dict_to_yaml(input_dict: Dict, file_path: str) -> None:
     Returns:
     None
     """
+    for key, value in input_dict.items():
+        if isinstance(value, tuple):
+            input_dict[key] = list(value)
+
     with open(file_path, 'w') as yaml_file:
         yaml.dump(input_dict, yaml_file)
+
+def save_list_to_txt(input_list: list, file_path: str) -> None:
+    with open(file_path, 'w') as f:
+        for item in input_list:
+            f.write("%s\n" % item)

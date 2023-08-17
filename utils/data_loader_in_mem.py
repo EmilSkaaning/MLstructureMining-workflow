@@ -1,4 +1,6 @@
 import os, math
+import sys
+
 import xgboost
 import numpy as np
 import pandas as pd
@@ -23,7 +25,7 @@ def save_labels(data: pd.DataFrame, directory: str, project_name: str) -> None:
     df.to_csv(os.path.join(directory, project_name, 'labels.csv'))
 
 
-def get_labels(directory: str, data_dir: str, do_pcc: bool) -> tuple:
+def get_labels(directory: str, data_dir: str, do_pcc: bool, simple_load: bool) -> tuple:
     """
     Get labels from files in a directory.
 
@@ -41,9 +43,12 @@ def get_labels(directory: str, data_dir: str, do_pcc: bool) -> tuple:
     if do_pcc:
         pcc_df = pd.read_csv(f'{directory}/structure_catalog_merged.csv', index_col=0)
         print(f"Fetching labels:")
-        for i, file in enumerate(tqdm(files)):
-            idx_position = find_substring_in_dataframe(file, pcc_df)
-            files_with_labels.append((file, idx_position))
+        if simple_load:
+            files_with_labels = [(f, i) for i, f in enumerate(pcc_df.Label.values)]
+        else:
+            for i, file in enumerate(tqdm(files)):
+                idx_position = find_substring_in_dataframe(file, pcc_df)
+                files_with_labels.append((file, idx_position))
         num_classes = len(pcc_df)
     else:
         for i, file in enumerate(tqdm(files)):
@@ -87,6 +92,7 @@ class DataFetcher:
     directory: str
     project_name: str
     labels_n_files: list
+    n_data: int
     drop_list: list = field(default_factory=lambda: [
         'filename', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'Uiso', 'Psize', 'rmin', 'rmax', 'rstep', 'qmin', 'qmax', 'qdamp', 'delta2'
     ])
@@ -95,8 +101,12 @@ class DataFetcher:
         """Initializes the object with additional properties."""
         placeholder_df = pd.read_csv(os.path.join(self.directory, self.labels_n_files[0][0]), index_col=0)
         placeholder_df = self.drop_rows(placeholder_df)
-        self.max_size = 100
-        placeholder_df = placeholder_df.head(self.max_size)
+        if self.n_data == -1:
+            self.max_size = len(placeholder_df)
+        else:
+            self.max_size = self.n_data  # todo: make this an input
+            placeholder_df = placeholder_df.head(self.max_size)
+
         self.pdf_length = len(placeholder_df.iloc[0])
         self.num_pdfs = len(placeholder_df)
         self.train_length = math.ceil(self.num_pdfs * .8)
@@ -182,7 +192,9 @@ class DataFetcher:
 def get_data_splits_from_clean_data(
         directory: str,
         project_name: str,
-        pcc: bool = True
+        pcc: bool = True,
+        simple_load: bool = False,
+        n_data: int = 100
     ) -> Tuple[xgboost.DMatrix, xgboost.DMatrix, xgboost.DMatrix, dict, int]:
     """Fetches and prepares data splits for training, validation and testing.
 
@@ -201,12 +213,12 @@ def get_data_splits_from_clean_data(
                the evaluation set, and the number of classes.
     """
     data_dir = os.path.join(directory, 'CIFs_clean_data')
-    files_w_labels, num_classes = get_labels(directory, data_dir, pcc)
+    files_w_labels, num_classes = get_labels(directory, data_dir, pcc, simple_load)
     save_labels(files_w_labels, directory, project_name)
 
-    data_obj = DataFetcher(data_dir, project_name, files_w_labels)
+    data_obj = DataFetcher(data_dir, project_name, files_w_labels, n_data)
 
-    print('Construction data splits.')
+    print('\nConstruction data splits.')
     train_data = data_obj('trn')
     validation_data = data_obj('vld')
     test_data = data_obj('tst')

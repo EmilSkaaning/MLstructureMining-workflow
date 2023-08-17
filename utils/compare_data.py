@@ -7,6 +7,7 @@ from scipy.stats import pearsonr
 from joblib import Parallel, delayed
 import time
 import sys
+import ast
 from multiprocessing import Pool, Manager
 from typing import List, Union
 
@@ -115,7 +116,6 @@ def correlation_matrix(data: np.array, n_cpu: int) -> np.array:
 
     # Assign the correlations to the upper half of the matrix
     corr_matrix[upper_indices] = correlations
-
     return corr_matrix
 
 
@@ -135,10 +135,9 @@ def high_correlations(corr_matrix: np.ndarray, threshold: float):
     n = corr_matrix.shape[0]
     high_corr = {i: None for i in range(n)}  # Start with all None values
 
-    print('Finding high correlations:')
+    print('\nFinding high correlations:')
     # Get the indices where correlation is above the threshold
     indices = np.where(corr_matrix > threshold)
-
     # For each index where correlation is above the threshold, assign the column index to the row index in the dictionary
     for row_index, col_index in tqdm(zip(*indices), total=len(indices[0])):
         if high_corr[row_index] is None:
@@ -149,26 +148,8 @@ def high_correlations(corr_matrix: np.ndarray, threshold: float):
     # Create a DataFrame from the dictionary
     df = pd.DataFrame(list(high_corr.items()), columns=['X', 'Y'])
 
-    return df
+    df['Y'] = df.apply(lambda row: [i for i in row['Y'] if i != row['X']] if isinstance(row['Y'], list) else row['Y'], axis=1)
 
-
-def reduce_pcc_wf(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Reduce a DataFrame containing a Pearson Correlation Coefficient matrix.
-
-    This function first reduces the DataFrame such that there are no duplicate indices in 'X' and 'Y'.
-    Then, it merges rows with similar indices in the 'Y' column.
-
-    Parameters:
-    df (pd.DataFrame): Input DataFrame with columns 'X' and 'Y', where 'X' contains integers and 'Y'
-                       contains lists of integers or None.
-
-    Returns:
-    pd.DataFrame: Reduced DataFrame where there are no duplicate indices in 'X' and 'Y', and rows with
-                  similar indices in the 'Y' column are merged.
-    """
-    df = reduce_dataframe(df)
-    df = merge_similar_rows(df)
     return df
 
 
@@ -187,25 +168,35 @@ def reduce_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame: Reduced DataFrame where each 'X' only appears once, either in 'X' or 'Y'.
     """
     df_copy = df.copy()
-    indices_to_drop = []
+    indices_to_drop, skip_list = [], []
     for i in tqdm(df_copy.index, desc='Reducing dataframe'):
+        if i in skip_list:
+            continue
         if df_copy.at[i, 'Y'] is not None:
-            new_Y = []
             indices_to_explore = df_copy.at[i, 'Y'].copy()  # copy to avoid changing the list while iterating
+            new_Y = df_copy.at[i, 'Y'].copy()
             while indices_to_explore:
                 current_index = indices_to_explore.pop(0)
-                if current_index not in new_Y:
+                if not current_index in df_copy.index:
+                    continue
+
+                y_vals = df_copy.at[current_index, 'Y']
+                if y_vals is None:
                     new_Y.append(current_index)
+                elif isinstance(y_vals, list) or isinstance(y_vals, int):
+                    y_vals = [val for val in y_vals if val!=i]
+                    new_Y.extend(flatten_and_sort([current_index, y_vals]))
+                #print('y_vals',y_vals)
+                #print('new_y', new_Y)
+                skip_list.append(current_index)
+                if current_index > i:
                     indices_to_drop.append(current_index)
-                    if current_index in df_copy.index and df_copy.at[current_index, 'Y'] is not None:
-                        indices_to_explore.extend(df_copy.at[current_index, 'Y'])
-            df_copy.at[i, 'Y'] = new_Y
+            df_copy.at[i, 'Y'] = flatten_and_sort(new_Y)
 
     indices_to_drop = list(set(indices_to_drop))  # remove any duplicates
     indices_to_drop = [idx for idx in indices_to_drop if
                        idx in df_copy.index]  # only keep indices that exist in the dataframe
     df_copy.drop(indices_to_drop, inplace=True)
-    df_copy.reset_index(drop=True, inplace=True)  # optional: to have a nice continuous index
     return df_copy
 
 
@@ -288,32 +279,38 @@ def check_no_duplicates_and_all_present(df: pd.DataFrame, n_max: int) -> bool:
     bool: True if there are no duplicates in 'X' and 'Y' and all integers from 0 to n_max are present. False otherwise.
     """
     # We will use a set data structure for efficient membership tests
+    return_state = True
     seen = set()
     for i in df.index:
         # Check 'X' value
         if df.at[i, 'X'] in seen:
-            print(df.at[i, 'X'])
-            print('Non unique value found in X!')
-            return False
+            #print(df.at[i, 'X'])
+            #print('Non unique value found in X!')
+            return_state = False
+
         seen.add(df.at[i, 'X'])
 
         # Check 'Y' values
         if df.at[i, 'Y'] is not None:
             for y in df.at[i, 'Y']:
                 if y in seen:
-                    print(df.at[i, 'Y'])
-                    print('Non unique value found in Y!')
-                    return False
+                    #print(df.at[i, 'Y'])
+                    #print('Non unique value found in Y!')
+                    return_state = False
+
                 seen.add(y)
 
     # Check that all integers from 0 to n_max are present
     expected_set = set(range(n_max + 1))  # +1 because range is exclusive at the upper end
+    seen, expected_set = sorted(list(set(seen))), sorted(list(set(expected_set)))
     if seen != expected_set:
+        print(len(seen), len(expected_set))
+        print([val for val in expected_set if not val in seen])
         print('Missing set!')
-        return False
+        sys.exit()
 
     # If we have checked all values, found no duplications, and all integers are present, return True
-    return True
+    return return_state
 
 
 def replace_integers_with_strings(df: pd.DataFrame, string_list: list) -> pd.DataFrame:
@@ -341,37 +338,34 @@ def replace_integers_with_strings(df: pd.DataFrame, string_list: list) -> pd.Dat
     return df
 
 
-def generate_structure_catalog(directory: str, pcc_th: float, n_cpu: int = 2) -> None:
+def generate_structure_catalog(directory: str, pcc_th: float, n_cpu: int = 2) -> str:
     head, tail = os.path.split(directory)
     print('\nCalculating structure catalog')
     start = time.time()
     data, f_names = get_data(directory, n_cpu)
-
     corr_mat = correlation_matrix(data, n_cpu)
-
     corr_df = high_correlations(corr_mat, pcc_th)
+
     n_val = len(corr_df) - 1
-
-    corr_df = reduce_pcc_wf(corr_df)
-
     count = 0
     while check_no_duplicates_and_all_present(corr_df, n_val)==False:
-        print('Performing additional reduction', count)
-        corr_df = reduce_pcc_wf(corr_df)
+        print(f'\nChecking duplicate indices, iteration {count}')
+        corr_df = reduce_dataframe(corr_df)
+        corr_df = merge_similar_rows(corr_df)
 
         count += 1
-        if count == 999_999:  # safety break
+        if count == 10:  # safety break
             break
+
     corr_df.reset_index(drop=True, inplace=True)  # optional: to have a nice continuous index
-    corr_df.to_csv(os.path.join(head, 'structure_catalog_merged.csv'))
-
-
     corr_df = replace_integers_with_strings(corr_df, f_names)
     print(f'After reduction a total of {len(corr_df)} classes still exist.')
     corr_df.to_csv(os.path.join(head, 'structure_catalog_merged.csv'))
 
     total_time = time.time() - start
     print('\nDone, took {:6.1f} h.'.format(total_time / 3600))
+
+    return head
 
 
 if __name__ == '__main__':
@@ -382,4 +376,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    generate_structure_catalog(args.directory, args.pcc_th, args.n_cpu)
+    project_dir = generate_structure_catalog(args.directory, args.pcc_th, args.n_cpu)
+
+    sys.path.append("../train_model")
+    from train_model import main_train
+
+    main_train(project_dir, args.n_cpu)
