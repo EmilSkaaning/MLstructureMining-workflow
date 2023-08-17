@@ -102,7 +102,7 @@ if __name__ == '__main__':
                        'He Ne Ar Kr Xe Rn ' \
                        'Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og ' \
                        ''.split(' ')
-    
+
     # 'La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu ' \
     # 'Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr ' \
 
