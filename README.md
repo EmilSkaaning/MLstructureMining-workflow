@@ -2,7 +2,7 @@
 
 # structureFinder
 
-**structureFinder** is a comprehensive package tailored for working with crystal structures, with a particular focus on simulating and analyzing Pair Distribution Function (PDF) data. The package encompasses everything from obtaining CIF files from renowned databases like the Crystallography Open Database (COD), preparing and simulating PDF data, to training a sophisticated XGBoost classifier for structure suggestions based on the simulated PDFs. Through a blend of established techniques and cutting-edge methodologies like Bayesian optimization, this toolkit offers an integrated solution for researchers working with crystal structures and their corresponding PDFs.
+**structureFinder** is a comprehensive package tailored for working with crystal structures, with a particular focus on simulating and analyzing Pair Distribution Function (PDF) data. The package encompasses everything from obtaining CIF files from renowned databases like the Crystallography Open Database (COD), preparing and simulating PDF data, to training a sophisticated XGBoost classifier for structure suggestions based on the simulated PDFs. With a combination of well-known techniques, including Bayesian optimization, this toolkit offers an integrated solution for researchers working with crystal structures and their corresponding PDFs.
 
 ## Install
 
