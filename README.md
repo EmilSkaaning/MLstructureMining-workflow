@@ -1,10 +1,10 @@
 [ChemRxiv]()  |  [Paper]()
 
-# Structure-Finder
+# structureFinder
 
 ## Install
 
-To run Structure-Finder please follow the steps below:
+To run structureFinder please follow the steps below:
 1) Make sure that you are running a Python 3.7 on a Linux or MacOS as DiffPy-CMI requires that. Let us first create
 a new environment:
 ````
@@ -25,14 +25,20 @@ pip install -r requirements.txt
 
 ## Code Structure
 
-1) [Get CIFs](./get_structures)
-2) [Prepare data](./prepare_data)
-3) [Train model](./train_model)
-4) [Utilities](./utils) 
+1) [Get structure from Crystallograhy Open Database (COD).](./get_structures)
+    * This section explains how to download COD, construct a local library and search through the CIFs to obtain a desired selection of structures. 
+    * This step is **optional** as CIFs can be obtain via several databases, [Inorganic Crystal Structure Database (ICSD)](#https://icsd.fiz-karlsruhe.de/index.xhtml;jsessionid=F2D29303581D2EE6C2C50D0AD23BF271), [American Mineralogist Crystal Structure Database (AMCSD)](#http://rruff.geo.arizona.edu/AMS/amcsd.php), [Crystal Structure Database for Minerals (MINCRYST)](#http://database.iem.ac.ru/mincryst/index.php) and many more.  
+2) [Prepare data and simulate.](./prepare_data)
+    * When a desired selection of CIFs have been obtained this will check that the CIFs are compatible with DiffPy-CMI, simulated 
+3) [Train model.](./train_model)
+    * 
+4) [Utilities.](./utils) 
+    * Contains the functionalities of the package.
+5) [Tests.](./tests)
+    * Contains the tests of the package.
 
 # Cite
 If you use our code or our results, please consider citing our paper. Thanks in advance!
-
 
 # Author 
 

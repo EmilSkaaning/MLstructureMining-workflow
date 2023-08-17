@@ -16,7 +16,17 @@ from smt.sampling_methods import LHS
 sys.path.append("..")
 from utils.tools import get_files
 
-
+SIMULATION_RANGE = {
+    'qmin': [0.7, 0.7],
+    'qmax': [20, 20],
+    'qdamp': [0.04, 0.04],
+    'delta2': [2, 2],
+    'Uiso': [0.005, 0.025],
+    'psize': [None, None],
+    'a': [-4, 4],
+    'b': [-4, 4],
+    'c': [-4, 4],
+}
 
 class sim_pdfs:
     """
@@ -196,38 +206,33 @@ def get_structures(directory: str, savedir: str, split: int) -> List[str]:
 
 
 
-def simulate_pdfs(stru_path: str, n_cpu: int = 1, n_simulations: int = 10) -> str:
+def simulate_pdfs(simulation_range, stru_path: str, n_cpu: int = 1, n_simulations: int = 10) -> str:
     """
-    Simulate PDFs for given parameters.
+    Simulate PDFs (Pair Distribution Functions) based on given parameters.
+
+    This function simulates X-ray scattering data from CIFs obtained from the
+    Crystallography Open Database (COD) based on the provided range of parameters.
 
     Parameters
     ----------
+    simulation_range : dict
+        A dictionary defining the simulation range for various parameters.
     stru_path : str
-        Path to the structure directory.
+        Path to the directory containing the structure files.
     n_cpu : int, optional
-        Number of CPUs to use for simulation. Defaults to 1.
+        Number of CPUs to use for the simulation. Defaults to 1.
     n_simulations : int, optional
-        Number of simulations to run. Defaults to 10.
+        Number of simulations to run for each structure. Defaults to 10.
 
     Returns
     -------
     str
-        Directory where the simulated PDFs are saved.
+        Path to the directory where the simulated PDFs are saved.
     """
     savedir = f'{stru_path}_data'
     get_files(savedir)
 
-    sim_range_dict = {
-        'qmin': [0.7, 0.7],
-        'qmax': [20, 20],
-        'qdamp': [0.04, 0.04],
-        'delta2': [2, 2],
-        'Uiso': [0.005, 0.025],
-        'psize': [None, None],
-        'a': [-4, 4],
-        'b': [-4, 4],
-        'c': [-4, 4],
-    }
+
 
     os.makedirs(savedir, exist_ok=True)
 
@@ -237,7 +242,7 @@ def simulate_pdfs(stru_path: str, n_cpu: int = 1, n_simulations: int = 10) -> st
     start_time = time.time()
 
     with multiprocessing.Pool(processes=n_cpu) as pool:
-        sim_pdfs_partial = partial(sim_pdfs, cif_dir=stru_path, save_dir=savedir, sim_range=sim_range_dict,
+        sim_pdfs_partial = partial(sim_pdfs, cif_dir=stru_path, save_dir=savedir, sim_range=simulation_range,
                                    split=n_simulations)
         for _ in tqdm(pool.imap_unordered(sim_pdfs_partial, files), total=len(files)):
             pass
@@ -248,12 +253,12 @@ def simulate_pdfs(stru_path: str, n_cpu: int = 1, n_simulations: int = 10) -> st
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Simulate PDFs.')
+    parser = argparse.ArgumentParser(description='Simulate PDFs using given structures and parameters.')
     parser.add_argument('stru_path', type=str, help='The directory where the structure files are located.')
-    parser.add_argument('-n', '--n_cpu', type=int, default=1, help='The number of CPUs to use for simulation.')
-    parser.add_argument('-s', '--n_simulations', type=int, default=10, help='The number of simulations to run.')
+    parser.add_argument('-n', '--n_cpu', type=int, default=1, help='(Optional) The number of CPUs to use for simulation. Default is 1.')
+    parser.add_argument('-s', '--n_simulations', type=int, default=10, help='(Optional) The number of simulations to run for each structure. Default is 10.')
 
     args = parser.parse_args()
 
-    simulate_pdfs(args.stru_path, args.n_cpu, args.n_simulations)
+    simulate_pdfs(SIMULATION_RANGE, args.stru_path, args.n_cpu, args.n_simulations)
 

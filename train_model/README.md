@@ -1,7 +1,3 @@
-Sure, I'll incorporate the requested changes and structure the parameters into tables for better readability.
-
----
-
 # XGBoost Classifier Trainer for Pair Distribution Function Data
 
 This project trains an XGBoost classifier on Pair Distribution Function data, derived from X-ray scattering data simulated from CIFs obtained from the Crystallography Open Database (COD). The user has the flexibility to modify various parameters and utilize Bayesian optimization for hyperparameter tuning. The training results, models, and hyperparameters are systematically stored for subsequent analysis.
@@ -16,13 +12,16 @@ This project trains an XGBoost classifier on Pair Distribution Function data, de
 python <script_name>.py <directory> -n <number_of_cpus> -s <simple_load_flag> -d <number_of_data> -b <do_bayesopt_flag>
 ```
 
-### Arguments:
+## Command-line Arguments
 
-- `directory`: The directory where the data is located.
-- `-n, --n_cpu`: The number of CPUs to use for training. Default is 1.
-- `-s, --simple_load`: If set, only one type of structure is loaded per class. Default is False.
-- `-d, --n_data`: Number of data points to be used for training. Default is -1 (all data).
-- `-b, --do_bayesopt`: If set, the model will be trained using Bayesian optimization.
+| Argument        | Default Value | Optional | Description                                                                                      |
+|-----------------|---------------|----------|--------------------------------------------------------------------------------------------------|
+| `directory`     | None          | No       | The directory where the data is located.                                                         |
+| `-n, --n_cpu`       | 1             | Yes      | The number of CPUs to use for training.                                                          |
+| `-s, --simple_load` | False     | Yes      | If set, only one type of structure is loaded per class.                                         |
+| `-d, --n_data`  | -1            | Yes      | Number of data points to be used for training.                                                   |
+| `-b, --do_bayesopt` | False     | Yes      | If set, the model will be trained using Bayesian optimization.                                   |
+
 
 ## Parameters
 The following parameters can be set inside of the `train_model.py` script. 
@@ -69,7 +68,3 @@ The following parameters can be set inside of the `train_model.py` script.
 | `reg_lambda`        | (0, 10.0)      | L2 regularization term on weights.         |
 | `reg_alpha`         | (0, 10.0)      | L1 regularization term on weights.         |
 | `gamma`             | (0, 10.0)      | Minimum loss reduction to make a further partition. |
-
----
-
-This template provides a detailed overview of the parameters and their utility. Adjustments can be made to further fit the exact nature and goals of your project.
