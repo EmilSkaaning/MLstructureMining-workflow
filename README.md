@@ -2,7 +2,7 @@
 
 # structureFinder
 
-**structureFinder** is a comprehensive package tailored for working with crystal structures, with a particular focus on simulating and analyzing Pair Distribution Function (PDF) data. The package encompasses everything from obtaining CIF files from renowned databases like the Crystallography Open Database (COD), preparing and simulating PDF data, to training a sophisticated XGBoost classifier for structure suggestions based on the simulated PDFs. With a combination of well-known techniques, including Bayesian optimization, this toolkit offers an integrated solution for researchers working with crystal structures and their corresponding PDFs.
+**structureFinder** is a comprehensive package tailored for working with crystal structures, with a particular focus on simulating and analyzing Pair Distribution Function (PDF) data. The package encompasses everything from obtaining CIF files from renowned databases like the Crystallography Open Database (COD), preparing and simulating PDF data, to training a XGBoost classifier for structure suggestions based on the simulated PDFs. With a combination of well-known techniques, including Bayesian optimization and adversarial attacks using the Zeroth Order Optimization (ZOO) technique from the [Adversarial Robustness Toolbox (ART)](https://github.com/Trusted-AI/adversarial-robustness-toolbox), this toolkit offers an integrated solution for researchers working with crystal structures and their corresponding PDFs.
 
 ## Install
 
@@ -33,8 +33,9 @@ pip install -r requirements.txt
 2) [Prepare data and simulate.](./prepare_data)
     * When a desired selection of CIFs have been obtained this will check that the CIFs are compatible with DiffPy-CMI, simulates Pair Distribution Function (data) data and constructs a structure catalog with similar PDFs using the Pearson Correlation Coefficient (PCC).
 3) [Train model.](./train_model)
-    * Trains, validates and tests a XGBoost classifier using the simulated PDFs.
+    * Trains, validates, and tests an XGBoost classifier using the simulated PDFs.
     * Bayesian optimization can be used for performing hyperparameter optimization.
+    * After training, the models are further evaluated against adversarial attacks using the Zeroth Order Optimization (ZOO) technique from the [Adversarial Robustness Toolbox (ART)](https://github.com/Trusted-AI/adversarial-robustness-toolbox).
 4) [Utilities.](./utils) 
     * Contains the functionalities of the package.
 5) [Tests.](./tests)

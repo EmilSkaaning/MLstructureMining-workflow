@@ -1,6 +1,8 @@
 # XGBoost Classifier Trainer for Pair Distribution Function Data
 
-This project trains an XGBoost classifier on Pair Distribution Function data, derived from X-ray scattering data simulated from CIFs obtained from the Crystallography Open Database (COD). The user has the flexibility to modify various parameters and utilize Bayesian optimization for hyperparameter tuning. The training results, models, and hyperparameters are systematically stored for subsequent analysis.
+This project trains an XGBoost classifier on Pair Distribution Function data, derived from X-ray scattering data simulated from CIFs obtained from the Crystallography Open Database (COD). The user has the flexibility to modify various parameters and utilize Bayesian optimization for hyperparameter tuning. After the models have been trained, they are further evaluated against adversarial attacks using the Zeroth Order Optimization (ZOO) technique. This helps in assessing the robustness of the models against potential adversarial threats. The training results, models, hyperparameters, and attack outcomes are systematically stored for subsequent analysis.
+
+---
 
 ## How to use
 
@@ -9,30 +11,31 @@ This project trains an XGBoost classifier on Pair Distribution Function data, de
 3. Use the command-line interface to provide the required and optional arguments for training:
 
 ```
-python <script_name>.py <directory> -n <number_of_cpus> -s <simple_load_flag> -d <number_of_data> -b <do_bayesopt_flag>
+python <script_name>.py <directory> -n <number_of_cpus> -d <number_of_data> -s <simple_load_flag> -b <do_bayesopt_flag> -z <do_zoo_attack_flag>
 ```
 
 ## Command-line Arguments
 
-| Argument        | Default Value | Optional | Description                                                                                      |
-|-----------------|---------------|----------|--------------------------------------------------------------------------------------------------|
-| `directory`     | None          | No       | The directory where the data is located.                                                         |
+| Argument            | Default Value | Optional | Description                                                                                      |
+|---------------------|---------------|----------|--------------------------------------------------------------------------------------------------|
+| `directory`         | None          | No       | The directory where the data is located.                                                         |
 | `-n, --n_cpu`       | 1             | Yes      | The number of CPUs to use for training.                                                          |
-| `-s, --simple_load` | False     | Yes      | If set, only one type of structure is loaded per class.                                         |
-| `-d, --n_data`  | -1            | Yes      | Number of data points to be used for training.                                                   |
-| `-b, --do_bayesopt` | False     | Yes      | If set, the model will be trained using Bayesian optimization.                                   |
-
+| `-d, --n_data`      | -1            | Yes      | Number of data points to be used for training.                                                   |
+| `-s, --simple_load` | False         | Yes      | If set, only one type of structure is loaded per class.                                         |
+| `-b, --do_bayesopt` | False         | Yes      | If set, the model will be trained using Bayesian optimization.                                   |
+| `-z, --do_zoo_attack`| False       | Yes      | If set, the trained model will be attacked using Zeroth Order Optimisation (ZOO).                |
 
 ## Parameters
+
 The following parameters can be set inside of the `train_model.py` script. 
 
 ### Program Settings
 
-| Parameter        | Default Value | Description                                                                                         |
-|------------------|---------------|-----------------------------------------------------------------------------------------------------|
-| `init_points`    | 3             | Initial number of points to begin the Bayesian optimization.                                        |
-| `n_iter`         | 3             | Number of iterations for Bayesian optimization.                                                     |
-| `iterative_train`| 3             | Number of iterations to train the model iteratively.                                                |
+| Parameter          | Default Value | Description                                                                                         |
+|--------------------|---------------|-----------------------------------------------------------------------------------------------------|
+| `init_points`      | 3             | Initial number of points to begin the Bayesian optimization.                                        |
+| `n_iter`           | 3             | Number of iterations for Bayesian optimization.                                                     |
+| `iterative_train`  | 3             | Number of iterations to train the model iteratively.                                                |
 
 ### Hyperparameters
 
@@ -49,7 +52,7 @@ The following parameters can be set inside of the `train_model.py` script.
 
 | Parameter               | Default Value | Description                                                                        |
 |-------------------------|---------------|------------------------------------------------------------------------------------|
-| `early_stopping_rounds` | 5            | Activates early stopping. Validation metric needs to improve at least once in every `early_stopping_rounds` round(s) to continue training. |
+| `early_stopping_rounds` | 5             | Activates early stopping. Validation metric needs to improve at least once in every `early_stopping_rounds` round(s) to continue training. |
 | `num_boost_round`       | 10            | The number of boosting rounds or trees to build.                                   |
 | `verbose_eval`          | 250           | Frequency of printing messages during training.                                    |
 | `subsample`             | 0.5           | Subsample ratio of the training instances.                                         |

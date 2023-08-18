@@ -1,23 +1,25 @@
-import os
-import time
+import argparse
 import datetime
 import sys
-import argparse
+import os
+import time
+from typing import Dict, List, Tuple, Union
+
 import numpy as np
 import xgboost
-from typing import Dict, Tuple, List, Union
-from sklearn.metrics import log_loss, accuracy_score
 from bayes_opt import BayesianOptimization
+from sklearn.metrics import accuracy_score, log_loss
 
-# Local imports
 sys.path.append("..")
+
 from utils.data_loader_in_mem import get_data_splits_from_clean_data
-from utils.tools import accuracy_top_x, save_dict_to_yaml, save_list_to_txt
 from utils.plotting import plot_loss_curve
+from utils.tools import accuracy_top_x, save_dict_to_yaml, save_list_to_txt
+from utils.zoo_attack import zoo_attach_xgb
 
 # Program settings
 program_setting: Dict[str, int] = {
-    "init_points": 3, 
+    "init_points": 3,
     "n_iter": 3,
     "iterative_train": 3,
 }
@@ -59,10 +61,7 @@ search_space: Dict[str, Tuple[float, float]] = {
 def test_model(
     booster: xgboost.Booster,
     tst_xy: Tuple[np.ndarray, np.ndarray],
-    eval_dict: Dict[str, List[float]],
-    project_name: str,
-    img_title: str,
-) -> None:
+) -> Tuple[float, List[float]]:
     """
     Test the trained XGBoost model and display results.
 
@@ -72,16 +71,12 @@ def test_model(
         Trained XGBoost model.
     tst_xy : Tuple[np.ndarray, np.ndarray]
         Testing dataset with data and labels.
-    eval_dict : Dict[str, List[float]]
-        Evaluation dictionary with loss values.
-    project_name : str
-        The name of the project.
-    img_title : str
-        Title for the loss curve plot.
 
     Returns
     -------
-    None
+    Tuple[float, List[float]]
+        The log loss of the model on the test dataset and a list containing
+        the overall accuracy and top-k accuracies.
     """
     pred = booster.predict(tst_xy)
     pred_label = np.argmax(pred, axis=1)
@@ -93,22 +88,13 @@ def test_model(
     acc_5 = accuracy_top_x(true_label, pred, 5)
     acc_7 = accuracy_top_x(true_label, pred, 7)
 
-    print("\nModel test acc: {:.2f} %".format(acc))
-    print("Model test acc top 3: {:.2f} %".format(acc_3))
-    print("Model test acc top 5: {:.2f} %".format(acc_5))
-    print("Model test acc top 7: {:.2f} %".format(acc_7))
+    print(
+        f"\nTest acc: {acc:.2f}%, top 3: {acc_3:.2f}%, top 5: {acc_5:.2f}%, top 7: {acc_7:.2f}%"
+    )
 
     mlogloss_tst = log_loss(true_label, pred)
 
-    # Plot loss curve
-    plot_loss_curve(
-        eval_dict,
-        project_name,
-        mlogloss_tst,
-        f"Loss: {mlogloss_tst:.2f}, Acc: {acc:.2f}, top 3: {acc_3:.2f}, top5: {acc_5:.2f}, top7: {acc_7:.2f}",
-        img_title,
-    )
-    return None
+    return mlogloss_tst, [acc, acc_3, acc_5, acc_7]
 
 
 def init_xgb_model(
@@ -159,6 +145,8 @@ def iterative_train(
     eval_set: Tuple[np.ndarray, np.ndarray],
     project_name: str,
     stem: str = None,
+    tst_tuple: Tuple[np.ndarray, np.ndarray] = None,
+    n_cpu: int = 1,
 ) -> xgboost.Booster:
     """
     Train a model iteratively for a given number of iterations.
@@ -175,8 +163,12 @@ def iterative_train(
         Booster: The trained XGBoost model.
     """
     booster = None
-    save_model_dir, save_data_dir = os.path.join(project_name, "models"), os.path.join(project_name, "data")
-    os.makedirs(save_model_dir, exist_ok=True), os.makedirs(save_data_dir, exist_ok=True)
+    save_model_dir, save_data_dir = os.path.join(project_name, "models"), os.path.join(
+        project_name, "data"
+    )
+    os.makedirs(save_model_dir, exist_ok=True), os.makedirs(
+        save_data_dir, exist_ok=True
+    )
     for i in range(n_iterations):
         if stem is None:
             stem = f"{i:09}"
@@ -185,10 +177,19 @@ def iterative_train(
         booster, eval_dict = init_xgb_model(params, trn_xy, eval_set, booster)
         booster.save_model(os.path.join(save_model_dir, f"xgb_model_{stem}.bin"))
 
+        mlogloss_tst, tst_acc = test_model(booster, tst_xy)
+        plot_title = f"Loss: {mlogloss_tst:.2f}\nAcc: {tst_acc[0]:.2f}, top 3: {tst_acc[1]:.2f}, top5: {tst_acc[2]:.2f}, top7: {tst_acc[3]:.2f}"
+
+        if tst_tuple is not None:
+            zoo_attack_tst_acc = zoo_attach_xgb(
+                booster, tst_tuple[0], tst_tuple[1], n_cpu
+            )
+            plot_title += f"\nZOO attack acc: {zoo_attack_tst_acc[0]:.2f}, top 3: {zoo_attack_tst_acc[1]:.2f}, top5: {zoo_attack_tst_acc[2]:.2f}, top7: {zoo_attack_tst_acc[3]:.2f}"
         save_dict_to_yaml(eval_dict, os.path.join(save_data_dir, f"data_{stem}.yml"))
 
-        test_model(booster, tst_xy, eval_dict, project_name, f"loss_curve_{stem}.png")
-        print(f"\nNumber of trees: {len(booster.trees_to_dataframe().Tree.unique())}")
+        plot_loss_curve(
+            eval_dict, project_name, mlogloss_tst, plot_title, f"loss_curve_{stem}.png"
+        )
 
         stem = None
     return booster
@@ -200,6 +201,7 @@ def main_train(
     simple_load: bool = False,
     n_data: int = 100,
     do_bayesopt: bool = False,
+    do_zoo_attack: bool = False,
 ) -> None:
     """
     Function to train the model and save the results.
@@ -216,6 +218,8 @@ def main_train(
         Number of data points to be used for training. Default is 100.
     do_bayesopt : bool, optional
         If the model should be trained with Bayesian optimization. Default is False.
+    do_zoo_attack : bool, optional
+        If the trained model should be attacked using Zeroth Order Optimisation (ZOO)
 
     Returns
     -------
@@ -233,9 +237,19 @@ def main_train(
     os.makedirs(project_name, exist_ok=True)
 
     # Get the data splits
-    trn_xy, vld_xy, tst_xy, eval_set, n_classes = get_data_splits_from_clean_data(
+
+    (
+        trn_xy,
+        vld_xy,
+        tst_xy,
+        eval_set,
+        n_classes,
+        tst_tuple,
+    ) = get_data_splits_from_clean_data(
         directory, project_name, simple_load=simple_load, n_data=n_data
     )
+    if do_zoo_attack == False:
+        tst_tuple = None
     params["hp"]["num_class"] = n_classes
     params["hp"]["nthread"] = n_cpu
 
@@ -280,16 +294,40 @@ def main_train(
             booster, eval_dict = init_xgb_model(params, trn_xy, eval_set)
             stem = f"bayse_optimization_{len(optimizer.res):05d}"  # unique identifier based on number of iterations so far
 
-            save_model_dir, save_data_dir, save_hp_dir = os.path.join(project_name, "models"), os.path.join(project_name, "data"), os.path.join(project_name, "model_hp")
-            os.makedirs(save_model_dir, exist_ok=True), os.makedirs(save_data_dir, exist_ok=True), os.makedirs(save_hp_dir, exist_ok=True)
+            save_model_dir, save_data_dir, save_hp_dir = (
+                os.path.join(project_name, "models"),
+                os.path.join(project_name, "data"),
+                os.path.join(project_name, "model_hp"),
+            )
+            os.makedirs(save_model_dir, exist_ok=True), os.makedirs(
+                save_data_dir, exist_ok=True
+            ), os.makedirs(save_hp_dir, exist_ok=True)
             booster.save_model(os.path.join(save_model_dir, f"xgb_model_{stem}.bin"))
-            save_dict_to_yaml(eval_dict, os.path.join(save_data_dir, f"data_{stem}.yml"))
+            save_dict_to_yaml(
+                eval_dict, os.path.join(save_data_dir, f"data_{stem}.yml")
+            )
             save_dict_to_yaml(params["hp"], os.path.join(save_hp_dir, f"hp_{stem}.yml"))
 
-            test_model(
-                booster, tst_xy, eval_dict, project_name, f"loss_curve_{stem}.png"
+            mlogloss_tst, tst_acc = test_model(booster, tst_xy)
+            plot_title = f"Loss: {mlogloss_tst:.2f}\nAcc: {tst_acc[0]:.2f}, top 3: {tst_acc[1]:.2f}, top5: {tst_acc[2]:.2f}, top7: {tst_acc[3]:.2f}"
+
+            if tst_tuple is not None:
+                zoo_attack_tst_acc = zoo_attach_xgb(
+                    booster, tst_tuple[0], tst_tuple[1], n_cpu
+                )
+                plot_title += f"\nZOO attack acc: {zoo_attack_tst_acc[0]:.2f}, top 3: {zoo_attack_tst_acc[1]:.2f}, top5: {zoo_attack_tst_acc[2]:.2f}, top7: {zoo_attack_tst_acc[3]:.2f}"
+            save_dict_to_yaml(
+                eval_dict, os.path.join(save_data_dir, f"data_{stem}.yml")
             )
-     
+
+            plot_loss_curve(
+                eval_dict,
+                project_name,
+                mlogloss_tst,
+                plot_title,
+                f"loss_curve_{stem}.png",
+            )
+
             return -eval_dict["train"]["mlogloss"][-1]
 
         optimizer = BayesianOptimization(
@@ -314,6 +352,8 @@ def main_train(
             tst_xy,
             eval_set,
             project_name,
+            tst_tuple=tst_tuple,
+            n_cpu=n_cpu,
         )
 
     total_time = time.time() - start_time
@@ -333,6 +373,8 @@ if __name__ == "__main__":
         default=1,
         help="The number of CPUs to use for training.",
     )
+    parser.add_argument("-d", "--n_data", type=int, default=-1)
+
     parser.add_argument(
         "-s",
         "--simple_load",
@@ -340,7 +382,6 @@ if __name__ == "__main__":
         action="store_true",
         help="If true only one type of structure is loaded per class.",
     )
-    parser.add_argument("-d", "--n_data", type=int, default=-1)
     parser.add_argument(
         "-b",
         "--do_bayesopt",
@@ -348,8 +389,20 @@ if __name__ == "__main__":
         action="store_true",
         help="If the model should be trained with Bayesian optimization.",
     )
+    parser.add_argument(
+        "-z",
+        "--do_zoo_attack",
+        default=False,
+        action="store_true",
+        help="If the trained model should be attacked using Zeroth Order Optimisation (ZOO)",
+    )
 
     args = parser.parse_args()
     main_train(
-        args.directory, args.n_cpu, args.simple_load, args.n_data, args.do_bayesopt
+        args.directory,
+        args.n_cpu,
+        args.simple_load,
+        args.n_data,
+        args.do_bayesopt,
+        args.do_zoo_attack,
     )
