@@ -1,7 +1,7 @@
 import argparse
 import datetime
-import os
 import sys
+import os
 import time
 from typing import Dict, List, Tuple, Union
 
@@ -10,17 +10,18 @@ import xgboost
 from bayes_opt import BayesianOptimization
 from sklearn.metrics import accuracy_score, log_loss
 
+sys.path.append("..")
+
 from utils.data_loader_in_mem import get_data_splits_from_clean_data
 from utils.plotting import plot_loss_curve
 from utils.tools import accuracy_top_x, save_dict_to_yaml, save_list_to_txt
 from utils.zoo_attack import zoo_attach_xgb
 
-warnings.filterwarnings("ignore")
 # Program settings
 program_setting: Dict[str, int] = {
-    "init_points": 1,  # 3,
-    "n_iter": 1,  # 3,
-    "iterative_train": 1,  # 3,
+    "init_points": 3,
+    "n_iter": 3,
+    "iterative_train": 3,
 }
 
 # Define hyperparameters

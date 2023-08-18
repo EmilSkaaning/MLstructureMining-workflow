@@ -4,8 +4,6 @@ import numpy as np
 import xgboost as xgb
 from art.attacks.evasion import ZooAttack
 from art.estimators.classification import XGBoostClassifier
-from art.utils import load_mnist
-from matplotlib import pyplot as plt
 from sklearn.metrics import accuracy_score
 
 from utils.tools import accuracy_top_x
