@@ -10,10 +10,6 @@ import xgboost
 from bayes_opt import BayesianOptimization
 from sklearn.metrics import accuracy_score, log_loss
 
-# Local imports
-sys.path.append("..")
-import warnings
-
 from utils.data_loader_in_mem import get_data_splits_from_clean_data
 from utils.plotting import plot_loss_curve
 from utils.tools import accuracy_top_x, save_dict_to_yaml, save_list_to_txt
@@ -64,7 +60,7 @@ search_space: Dict[str, Tuple[float, float]] = {
 def test_model(
     booster: xgboost.Booster,
     tst_xy: Tuple[np.ndarray, np.ndarray],
-) -> None:
+) -> Tuple[float, List[float]]:
     """
     Test the trained XGBoost model and display results.
 
@@ -77,7 +73,9 @@ def test_model(
 
     Returns
     -------
-    None
+    Tuple[float, List[float]]
+        The log loss of the model on the test dataset and a list containing
+        the overall accuracy and top-k accuracies.
     """
     pred = booster.predict(tst_xy)
     pred_label = np.argmax(pred, axis=1)
@@ -219,6 +217,8 @@ def main_train(
         Number of data points to be used for training. Default is 100.
     do_bayesopt : bool, optional
         If the model should be trained with Bayesian optimization. Default is False.
+    do_zoo_attack : bool, optional
+        If the trained model should be attacked using Zeroth Order Optimisation (ZOO)
 
     Returns
     -------

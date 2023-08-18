@@ -125,14 +125,21 @@ class DataFetcher:
         self.validate_length = math.ceil((self.num_pdfs - self.train_length) / 2)
         self.test_length = self.num_pdfs - (self.train_length + self.validate_length)
 
-    def __call__(self, mode: str) -> xgboost.DMatrix:
-        """Fetches and processes the data based on the provided mode.
+    def __call__(
+        self, mode: str
+    ) -> Tuple[xgboost.DMatrix, Tuple[np.ndarray, np.ndarray]]:
+        """
+        Fetches and processes the data based on the provided mode.
 
-        Args:
-            mode (str): Mode of operation - 'trn', 'vld', or 'tst'.
+        Parameters
+        ----------
+        mode : str
+            Mode of operation. It can be one of 'trn', 'vld', or 'tst'.
 
-        Returns:
-            xgboost.DMatrix: The prepared data matrix.
+        Returns
+        -------
+        Tuple[xgboost.DMatrix, Tuple[np.ndarray, np.ndarray]]
+            The prepared XGBoost data matrix and a tuple containing the data matrix (x) and the labels (y).
         """
         if mode == "trn":
             x, y, increment = self.init_arrays(self.train_length)
@@ -211,7 +218,12 @@ def get_data_splits_from_clean_data(
     simple_load: bool = False,
     n_data: int = 100,
 ) -> Tuple[
-    xgboost.DMatrix, xgboost.DMatrix, xgboost.DMatrix, Dict[str, xgboost.DMatrix], int
+    xgboost.DMatrix,
+    xgboost.DMatrix,
+    xgboost.DMatrix,
+    List[Tuple[xgboost.DMatrix, str]],
+    int,
+    Tuple[np.ndarray, np.ndarray],
 ]:
     """
     Fetches and prepares data splits for training, validation, and testing.
@@ -236,9 +248,10 @@ def get_data_splits_from_clean_data(
 
     Returns
     -------
-    tuple
-        A tuple containing the training data, validation data, testing data,
-        the evaluation set, and the number of classes.
+    Tuple[xgboost.DMatrix, xgboost.DMatrix, xgboost.DMatrix, List[Tuple[xgboost.DMatrix, str]], int, Tuple[np.ndarray, np.ndarray]]
+        Returns the training data, validation data, testing data, the evaluation set
+        (as a list of tuples with data and its name), the number of classes, and a tuple
+        containing the test data matrix and the labels as numpy arrays.
     """
     data_dir = os.path.join(directory, "CIFs_clean_data")
     files_w_labels, num_classes = get_labels(directory, data_dir, pcc, simple_load)
@@ -250,8 +263,8 @@ def get_data_splits_from_clean_data(
     data_obj = DataFetcher(data_dir, project_name, files_w_labels, n_data)
 
     print("\nConstruction data splits.")
-    train_data, train_tuple = data_obj("trn")
-    validation_data, validation_tuple = data_obj("vld")
+    train_data, _ = data_obj("trn")
+    validation_data, _ = data_obj("vld")
     test_data, test_tuple = data_obj("tst")
 
     eval_set = [(train_data, "train"), (validation_data, "validation")]

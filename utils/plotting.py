@@ -3,8 +3,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from typing import Dict
 
-def plot_loss_curve(evaluation_dict: Dict[str, dict], project_name: str, mlogloss_test: float, 
-                    plot_title: str, file_title: str) -> None:
+
+def plot_loss_curve(
+    evaluation_dict: Dict[str, dict],
+    project_name: str,
+    mlogloss_test: float,
+    plot_title: str,
+    file_title: str,
+) -> None:
     """
     Plot the loss curve based on the evaluation dictionary and save it as a PNG file.
 
@@ -26,13 +32,17 @@ def plot_loss_curve(evaluation_dict: Dict[str, dict], project_name: str, mloglos
     None
     """
     for key in evaluation_dict.keys():
-        plt.plot(np.arange(len(evaluation_dict[key]['mlogloss'])), evaluation_dict[key]['mlogloss'], label=key)
+        plt.plot(
+            np.arange(len(evaluation_dict[key]["mlogloss"])),
+            evaluation_dict[key]["mlogloss"],
+            label=key,
+        )
 
     # Plotting the horizontal line for test mlogloss value
-    plt.axhline(mlogloss_test, linestyle='--', color='green', label='test')
-    
-    plt.ylabel('mlogloss')
-    plt.xlabel('epochs')
+    plt.axhline(mlogloss_test, linestyle="--", color="green", label="test")
+
+    plt.ylabel("mlogloss")
+    plt.xlabel("epochs")
     plt.title(plot_title)
     plt.legend()
 
@@ -43,5 +53,5 @@ def plot_loss_curve(evaluation_dict: Dict[str, dict], project_name: str, mloglos
     save_dir = os.path.join(project_name, "img")
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
-    plt.savefig(os.path.join(save_dir, f'{file_title}.png'), dpi=300)
+    plt.savefig(os.path.join(save_dir, f"{file_title}.png"), dpi=300)
     plt.clf()

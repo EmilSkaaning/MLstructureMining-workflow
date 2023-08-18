@@ -145,6 +145,6 @@ def save_list_to_txt(input_list: List[str], file_path: str) -> None:
     -------
     None
     """
-    with open(file_path, 'w') as f:
+    with open(file_path, "w") as f:
         for item in input_list:
             f.write("%s\n" % item)

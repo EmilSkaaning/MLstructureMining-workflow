@@ -14,10 +14,25 @@ warnings.filterwarnings("ignore")
 
 
 def get_adversarial_examples(
-    model,
-    x_tst,
-    n_cpu: int = 1,
-):
+    model: xgb.XGBClassifier, x_tst: np.ndarray, n_cpu: int = 1
+) -> np.ndarray:
+    """
+    Generate adversarial test examples using the ZOO attack.
+
+    Parameters
+    ----------
+    model : xgb.XGBClassifier
+        The trained XGBoost classifier.
+    x_tst : np.ndarray
+        The test samples.
+    n_cpu : int, optional
+        Number of CPUs to use for parallel processing, by default 1.
+
+    Returns
+    -------
+    np.ndarray
+        Adversarial test samples.
+    """
     print("\nGenerating adversarial test examples for ZOO attack...")
     art_classifier = XGBoostClassifier(
         model=model, nb_features=x_tst.shape[1], nb_classes=10
@@ -46,7 +61,28 @@ def get_adversarial_examples(
     return x_tst_adv
 
 
-def zoo_attach_xgb(model, x_tst, y_tst, n_cpu):
+def zoo_attach_xgb(
+    model: xgb.XGBClassifier, x_tst: np.ndarray, y_tst: np.ndarray, n_cpu: int = 1
+) -> list:
+    """
+    Attack an XGBoost model using ZOO and evaluate its performance.
+
+    Parameters
+    ----------
+    model : xgb.XGBClassifier
+        The trained XGBoost classifier.
+    x_tst : np.ndarray
+        Test samples.
+    y_tst : np.ndarray
+        True labels for test samples.
+    n_cpu : int, optional
+        Number of CPUs to use for parallel processing, by default 1.
+
+    Returns
+    -------
+    list
+        A list containing accuracy scores for the model on adversarial examples.
+    """
     x_tst_adv = get_adversarial_examples(model, x_tst, n_cpu)
 
     pred = model.predict(xgb.DMatrix(x_tst_adv))

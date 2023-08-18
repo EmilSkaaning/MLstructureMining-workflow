@@ -4,6 +4,7 @@ import pandas as pd
 import regex as re
 from tqdm import tqdm
 
+
 def absolute_file_paths(root_path: str) -> list:
     """
     Retrieve absolute file paths of all files in the directory and subdirectories.
@@ -14,7 +15,12 @@ def absolute_file_paths(root_path: str) -> list:
     Returns:
     - List of absolute file paths.
     """
-    return [os.path.join(root, filename) for root, _, filenames in os.walk(root_path) for filename in filenames]
+    return [
+        os.path.join(root, filename)
+        for root, _, filenames in os.walk(root_path)
+        for filename in filenames
+    ]
+
 
 def expand_string(elements: list) -> list:
     """
@@ -26,7 +32,8 @@ def expand_string(elements: list) -> list:
     Returns:
     - List of expanded strings.
     """
-    return [ele if len(ele) != 2 else f'{ele}_' for ele in elements]
+    return [ele if len(ele) != 2 else f"{ele}_" for ele in elements]
+
 
 def copy_files(db_path: str, files: list, save_dir: str):
     """
@@ -42,9 +49,10 @@ def copy_files(db_path: str, files: list, save_dir: str):
     for f in tqdm(files):
         matching_files = [fi for fi in db_files if f in fi]
         if not matching_files:
-            print(f'did not find {f}')
+            print(f"did not find {f}")
             continue
         shutil.copy2(matching_files[0], os.path.join(save_dir, f))
+
 
 def locate_cifs(df_library: pd.DataFrame, exclude: list, include: list) -> list:
     """
@@ -62,14 +70,21 @@ def locate_cifs(df_library: pd.DataFrame, exclude: list, include: list) -> list:
     files = []
 
     for _, row in tqdm(df_library.iterrows(), total=len(df_library)):
-        atoms = expand_string(re.sub(r'[0-9]+', '', row['composition']).split(' '))
+        atoms = expand_string(re.sub(r"[0-9]+", "", row["composition"]).split(" "))
         if not any(a in exclude for a in atoms):
             if not include or any(a in include for a in atoms):
-                files.append(row['file'])
+                files.append(row["file"])
 
     return files
 
-def main(db_path: str, exclude: list, include: list, save_dir: str, library_name="library.csv"):
+
+def main(
+    db_path: str,
+    exclude: list,
+    include: list,
+    save_dir: str,
+    library_name="library.csv",
+):
     """
     Main function to orchestrate the extraction and copying of CIF files.
 
@@ -91,23 +106,28 @@ def main(db_path: str, exclude: list, include: list, save_dir: str, library_name
     files = locate_cifs(df_library, exclude, include)
     copy_files(db_path, files, save_dir)
 
-if __name__ == '__main__':
-    exclude_elements = 'Li Na K Rb Cs Fr ' \
-                       'Be Mg Ca Sr Ba Ra ' \
-                       'B ' \
-                       'C Si Ge ' \
-                       'N P As Sb ' \
-                       'Se Te ' \
-                       'F Cl Br I At ' \
-                       'He Ne Ar Kr Xe Rn ' \
-                       'Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og ' \
-                       ''.split(' ')
+
+if __name__ == "__main__":
+    exclude_elements = (
+        "Li Na K Rb Cs Fr "
+        "Be Mg Ca Sr Ba Ra "
+        "B "
+        "C Si Ge "
+        "N P As Sb "
+        "Se Te "
+        "F Cl Br I At "
+        "He Ne Ar Kr Xe Rn "
+        "Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og "
+        "".split(" ")
+    )
 
     # 'La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu ' \
     # 'Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr ' \
 
-    include_elements = ['O', 'S', 'H']
-    save_directory = 'test_cod_fetch'
-    database_path = '/mnt/c/Users/thyge/Documents/Work_stuff/CIF_finder/development/cod_dummy'
+    include_elements = ["O", "S", "H"]
+    save_directory = "test_cod_fetch"
+    database_path = (
+        "/mnt/c/Users/thyge/Documents/Work_stuff/CIF_finder/development/cod_dummy"
+    )
 
     main(database_path, exclude_elements, include_elements, save_directory)
