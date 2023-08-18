@@ -26,7 +26,7 @@ def get_labels(directory: str, data_dir: str, do_pcc: bool, simple_load: bool) -
     files_with_labels = []
 
     if do_pcc:
-        pcc_df = pd.read_csv(f'{directory}/structure_catalog_merged.csv', index_col=0)
+        pcc_df = pd.read_csv(f"{directory}/structure_catalog_merged.csv", index_col=0)
         print(f"Fetching labels:")
         if simple_load:
             files_with_labels = [(f, i) for i, f in enumerate(pcc_df.Label.values)]
@@ -81,17 +81,37 @@ class DataFetcher:
     drop_list : List[str]
         List of columns to be dropped from the DataFrame.
     """
+
     directory: str
     project_name: str
     labels_n_files: List[Tuple[str, int]]
     n_data: int
-    drop_list: List[str] = field(default_factory=lambda: [
-        'filename', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'Uiso', 'Psize', 'rmin', 'rmax', 'rstep', 'qmin', 'qmax', 'qdamp', 'delta2'
-    ])
+    drop_list: List[str] = field(
+        default_factory=lambda: [
+            "filename",
+            "a",
+            "b",
+            "c",
+            "alpha",
+            "beta",
+            "gamma",
+            "Uiso",
+            "Psize",
+            "rmin",
+            "rmax",
+            "rstep",
+            "qmin",
+            "qmax",
+            "qdamp",
+            "delta2",
+        ]
+    )
 
     def __post_init__(self):
         """Initializes the object with additional properties."""
-        placeholder_df = pd.read_csv(os.path.join(self.directory, self.labels_n_files[0][0]), index_col=0)
+        placeholder_df = pd.read_csv(
+            os.path.join(self.directory, self.labels_n_files[0][0]), index_col=0
+        )
         placeholder_df = self.drop_rows(placeholder_df)
         if self.n_data == -1:
             self.max_size = len(placeholder_df)
@@ -101,7 +121,7 @@ class DataFetcher:
 
         self.pdf_length = len(placeholder_df.iloc[0])
         self.num_pdfs = len(placeholder_df)
-        self.train_length = math.ceil(self.num_pdfs * .8)
+        self.train_length = math.ceil(self.num_pdfs * 0.8)
         self.validate_length = math.ceil((self.num_pdfs - self.train_length) / 2)
         self.test_length = self.num_pdfs - (self.train_length + self.validate_length)
 
@@ -114,27 +134,29 @@ class DataFetcher:
         Returns:
             xgboost.DMatrix: The prepared data matrix.
         """
-        if mode == 'trn':
+        if mode == "trn":
             x, y, increment = self.init_arrays(self.train_length)
-        elif mode == 'vld':
+        elif mode == "vld":
             x, y, increment = self.init_arrays(self.validate_length)
-        elif mode == 'tst':
+        elif mode == "tst":
             x, y, increment = self.init_arrays(self.test_length)
         else:
             raise ValueError('Invalid mode. Valid modes are "trn", "vld", or "tst".')
-        print(f'{mode} data shape, x: {np.shape(x)}, y: {np.shape(y)}')
+        print(f"{mode} data shape, x: {np.shape(x)}, y: {np.shape(y)}")
         for idx, file in enumerate(self.labels_n_files):
-            df = pd.read_csv(os.path.join(self.directory, self.labels_n_files[idx][0]), index_col=0)
+            df = pd.read_csv(
+                os.path.join(self.directory, self.labels_n_files[idx][0]), index_col=0
+            )
             df = self.split_ratios(df, mode)
             df = self.drop_rows(df)
-            df['Label'] = self.labels_n_files[idx][1]
+            df["Label"] = self.labels_n_files[idx][1]
 
             y_placeholder = df.Label.to_numpy()
-            y[idx*increment:(idx+1)*increment] = y_placeholder
-            x_placeholder = df.drop(['Label'], axis=1).to_numpy(dtype=np.float)
-            x[idx * increment:(idx + 1) * increment][:] = x_placeholder
+            y[idx * increment : (idx + 1) * increment] = y_placeholder
+            x_placeholder = df.drop(["Label"], axis=1).to_numpy(dtype=np.float)
+            x[idx * increment : (idx + 1) * increment][:] = x_placeholder
 
-        return xgboost.DMatrix(x, label=y)
+        return xgboost.DMatrix(x, label=y), (x, y)
 
     def init_arrays(self, increment: int) -> Tuple[np.ndarray, np.ndarray, int]:
         """Initializes the arrays for data storage.
@@ -159,12 +181,12 @@ class DataFetcher:
         Returns:
             pandas.DataFrame: The split DataFrame.
         """
-        if mode == 'trn':
-            return df.iloc[:self.train_length]
-        elif mode == 'vld':
-            return df.iloc[self.train_length:self.train_length + self.validate_length]
-        elif mode == 'tst':
-            return df.iloc[self.train_length + self.validate_length:self.max_size]
+        if mode == "trn":
+            return df.iloc[: self.train_length]
+        elif mode == "vld":
+            return df.iloc[self.train_length : self.train_length + self.validate_length]
+        elif mode == "tst":
+            return df.iloc[self.train_length + self.validate_length : self.max_size]
         else:
             raise ValueError('Invalid mode. Valid modes are "trn", "vld", or "tst".')
 
@@ -178,16 +200,19 @@ class DataFetcher:
             pandas.DataFrame: The DataFrame after dropping the specified columns.
         """
         for drop_item in self.drop_list:
-            df = df.drop(columns=drop_item, errors='ignore')
+            df = df.drop(columns=drop_item, errors="ignore")
         return df
 
+
 def get_data_splits_from_clean_data(
-        directory: str,
-        project_name: str,
-        pcc: bool = True,
-        simple_load: bool = False,
-        n_data: int = 100
-    ) -> Tuple[xgboost.DMatrix, xgboost.DMatrix, xgboost.DMatrix, Dict[str, xgboost.DMatrix], int]:
+    directory: str,
+    project_name: str,
+    pcc: bool = True,
+    simple_load: bool = False,
+    n_data: int = 100,
+) -> Tuple[
+    xgboost.DMatrix, xgboost.DMatrix, xgboost.DMatrix, Dict[str, xgboost.DMatrix], int
+]:
     """
     Fetches and prepares data splits for training, validation, and testing.
 
@@ -215,20 +240,20 @@ def get_data_splits_from_clean_data(
         A tuple containing the training data, validation data, testing data,
         the evaluation set, and the number of classes.
     """
-    data_dir = os.path.join(directory, 'CIFs_clean_data')
+    data_dir = os.path.join(directory, "CIFs_clean_data")
     files_w_labels, num_classes = get_labels(directory, data_dir, pcc, simple_load)
-    shutil.copy2(os.path.join(directory, 'structure_catalog_merged.csv'), os.path.join(directory, project_name, 'labels.csv'))
+    shutil.copy2(
+        os.path.join(directory, "structure_catalog_merged.csv"),
+        os.path.join(directory, project_name, "labels.csv"),
+    )
 
     data_obj = DataFetcher(data_dir, project_name, files_w_labels, n_data)
 
-    print('\nConstruction data splits.')
-    train_data = data_obj('trn')
-    validation_data = data_obj('vld')
-    test_data = data_obj('tst')
+    print("\nConstruction data splits.")
+    train_data, train_tuple = data_obj("trn")
+    validation_data, validation_tuple = data_obj("vld")
+    test_data, test_tuple = data_obj("tst")
 
-    eval_set = [(train_data, 'train'), (validation_data, 'validation')]
+    eval_set = [(train_data, "train"), (validation_data, "validation")]
 
-    return train_data, validation_data, test_data, eval_set, num_classes
-
-
-
+    return train_data, validation_data, test_data, eval_set, num_classes, test_tuple
