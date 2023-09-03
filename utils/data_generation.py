@@ -9,7 +9,7 @@ from typing import List, Dict, Union
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from diffpy.Structure import loadStructure
+from diffpy.structure import loadStructure
 from diffpy.srreal.pdfcalculator import PDFCalculator
 from smt.sampling_methods import LHS
 

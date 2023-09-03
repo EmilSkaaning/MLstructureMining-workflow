@@ -89,7 +89,7 @@ def test_model(
     acc_7 = accuracy_top_x(true_label, pred, 7)
 
     print(
-        f"\nTest acc: {acc:.2f}%, top 3: {acc_3:.2f}%, top 5: {acc_5:.2f}%, top 7: {acc_7:.2f}%"
+        f"\nTest acc: {acc:.2f}, top 3: {acc_3:.2f}, top 5: {acc_5:.2f}, top 7: {acc_7:.2f}"
     )
 
     mlogloss_tst = log_loss(true_label, pred)
@@ -292,7 +292,7 @@ def main_train(
                     params["hp"][sample_para] = value
 
             booster, eval_dict = init_xgb_model(params, trn_xy, eval_set)
-            stem = f"bayse_optimization_{len(optimizer.res):05d}"  # unique identifier based on number of iterations so far
+            stem = f"bayes_optimization_{len(optimizer.res):05d}"  # unique identifier based on number of iterations so far
 
             save_model_dir, save_data_dir, save_hp_dir = (
                 os.path.join(project_name, "models"),
@@ -342,7 +342,7 @@ def main_train(
         results = optimizer.res
         results = sorted(results, key=lambda d: d["target"], reverse=True)
         save_list_to_txt(
-            results, os.path.join(project_name, f"_bayse_optimization_results.txt")
+            results, os.path.join(project_name, f"_bayes_optimization_results.txt")
         )
     else:
         _ = iterative_train(

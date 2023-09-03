@@ -1,12 +1,12 @@
 [ChemRxiv]()  |  [Paper]()
 
-# structureFinder
+# MLstructureMining Workflow
 
-**structureFinder** is a comprehensive package tailored for working with crystal structures, with a particular focus on simulating and analyzing Pair Distribution Function (PDF) data. The package encompasses everything from obtaining CIF files from renowned databases like the Crystallography Open Database (COD), preparing and simulating PDF data, to training a XGBoost classifier for structure suggestions based on the simulated PDFs. With a combination of well-known techniques, including Bayesian optimization and adversarial attacks using the Zeroth Order Optimization (ZOO) technique from the [Adversarial Robustness Toolbox (ART)](https://github.com/Trusted-AI/adversarial-robustness-toolbox), this toolkit offers an integrated solution for researchers working with crystal structures and their corresponding PDFs.
+**MLstructureMining Workflow** is a comprehensive package tailored for working with crystal structures, with a particular focus on simulating and analyzing Pair Distribution Function (PDF) data. The package encompasses everything from obtaining CIF files from renowned databases like the Crystallography Open Database (COD), preparing and simulating PDF data, to training a XGBoost classifier for structure suggestions based on the simulated PDFs. With a combination of well-known techniques, including Bayesian optimization and adversarial attacks using the Zeroth Order Optimization (ZOO) technique from the [Adversarial Robustness Toolbox (ART)](https://github.com/Trusted-AI/adversarial-robustness-toolbox), this toolkit offers an integrated solution for researchers working with crystal structures and their corresponding PDFs.
 
 ## Install
 
-To run **structureFinder** please follow the steps below:
+To run **MLstructureMining Workflow** please follow the steps below:
 1) Make sure that you are running a Python 3.7 on a Linux or MacOS as DiffPy-CMI requires that. Let us first create
 a new environment:
 ````
